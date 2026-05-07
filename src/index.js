@@ -1,0 +1,94 @@
+﻿require('dotenv').config();
+
+const { Client, GatewayIntentBits, Partials } = require('discord.js');
+const fs = require('fs');
+const path = require('path');
+const config = require('./config');
+const { initializeDatabase } = require('./database/database');
+const { validateEnv } = require('./utils/envValidator');
+const { info, error: logError, formatError, dbInfo } = require('./utils/logger');
+
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
+    ],
+    partials: [Partials.Channel]
+});
+
+function registerGlobalErrorHandlers() {
+    process.on('unhandledRejection', reason => {
+        logError('Unhandled promise rejection', { error: formatError(reason) });
+    });
+
+    process.on('uncaughtException', err => {
+        logError('Uncaught exception', { error: formatError(err) });
+    });
+
+    client.on('error', err => {
+        logError('Discord client error', { error: formatError(err) });
+    });
+
+    client.rest.on('rateLimited', data => {
+        info('Discord rate limit', {
+            global: data.global,
+            timeout: data.timeToReset,
+            route: data.route
+        });
+    });
+}
+
+function loadEvents() {
+    const eventsPath = path.join(__dirname, 'events');
+    const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
+
+    for (const file of eventFiles) {
+        const event = require(path.join(eventsPath, file));
+        const executeEvent = async (...args) => {
+            try {
+                await event.execute(...args, config);
+            } catch (err) {
+                logError('Event execution failed', { event: event.name, file, error: formatError(err) });
+            }
+        };
+
+        if (event.once) {
+            client.once(event.name, executeEvent);
+        } else {
+            client.on(event.name, executeEvent);
+        }
+    }
+}
+
+function validateStartupEnv() {
+    const result = validateEnv(process.env);
+    if (!result.ok) {
+        process.exit(1);
+    }
+}
+
+function initializePersistenceLayer() {
+    initializeDatabase();
+    dbInfo('Persistence layer ready');
+}
+
+async function bootstrap() {
+    registerGlobalErrorHandlers();
+    validateStartupEnv();
+    initializePersistenceLayer();
+
+    info('Starting NiMa Discord bot', {
+        guildId: config.guildId,
+        clientId: config.clientId
+    });
+
+    loadEvents();
+    await client.login(config.token);
+}
+
+bootstrap().catch(err => {
+    logError('Bot bootstrap failed', { error: formatError(err) });
+    process.exit(1);
+});

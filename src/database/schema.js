@@ -68,7 +68,32 @@
         guild_id TEXT PRIMARY KEY,
         built_at TEXT NOT NULL,
         schema_version TEXT NOT NULL
-    );`
+    );`,
+    `CREATE TABLE IF NOT EXISTS knowledge_entries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        guild_id TEXT NOT NULL,
+        channel_id TEXT NOT NULL,
+        thread_id TEXT,
+        source_message_id TEXT,
+        source_type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        content TEXT NOT NULL,
+        tags TEXT NOT NULL,
+        created_by TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    );`,
+    `CREATE INDEX IF NOT EXISTS idx_knowledge_entries_scope ON knowledge_entries (guild_id, channel_id, thread_id, created_at);`,
+    `CREATE TABLE IF NOT EXISTS knowledge_events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        guild_id TEXT NOT NULL,
+        channel_id TEXT NOT NULL,
+        thread_id TEXT,
+        message_id TEXT,
+        event_type TEXT NOT NULL,
+        details TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    );`,
+    `CREATE INDEX IF NOT EXISTS idx_knowledge_events_scope ON knowledge_events (guild_id, channel_id, thread_id, created_at);`
 ];
 
 module.exports = { schemaStatements };

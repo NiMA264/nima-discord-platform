@@ -5,7 +5,7 @@ const { schemaStatements } = require('./schema');
 const { dbInfo, dbError } = require('../utils/logger');
 
 let dbInstance;
-const SCHEMA_VERSION = '2';
+const SCHEMA_VERSION = '3';
 
 function assertDatabasePathReachable(dbPath) {
     const dir = path.dirname(dbPath);

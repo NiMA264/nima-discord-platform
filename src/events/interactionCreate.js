@@ -1,5 +1,4 @@
-const setupCommand = require('../commands/setup');
-const moderationCommand = require('../commands/moderation');
+const { handleChatInputCommand } = require('./chatCommandHandler');
 const { hasManageGuildPermission } = require('../utils/permissions');
 const { safeInteractionError, safeReply, safeDefer, safeEditReply, safeFinalReply } = require('../utils/discord');
 const { findRole } = require('../utils/resolvers');
@@ -43,13 +42,13 @@ async function safeReplyWithSplit(interaction, content, payload = {}) {
 
 function denyIfNoManageGuild(interaction) {
     if (hasManageGuildPermission(interaction.member)) return false;
-    safeReply(interaction, { content: 'Nur Admins dürfen diese Aktion ausführen.', flags: 64 });
+    safeReply(interaction, { content: 'Nur Admins dÃ¼rfen diese Aktion ausfÃ¼hren.', flags: 64 });
     return true;
 }
 
 async function runSetupAction(interaction, config, value) {
     if (!hasManageGuildPermission(interaction.member)) {
-        return safeReply(interaction, { content: 'Nur Admins dürfen Setup-Aktionen ausführen.', flags: 64 });
+        return safeReply(interaction, { content: 'Nur Admins dÃ¼rfen Setup-Aktionen ausfÃ¼hren.', flags: 64 });
     }
 
     if (value === 'build') {
@@ -79,11 +78,11 @@ async function runSetupAction(interaction, config, value) {
         await safeDefer(interaction, 64);
         const result = await cleanupDuplicateStructure(interaction.guild, config, { dryRun: false });
         if (!result.ok && result.requiresDryRun) {
-            return safeEditReply(interaction, { content: 'Cleanup Execute blockiert: Bitte zuerst "Cleanup prüfen" ausführen.', components: [] });
+            return safeEditReply(interaction, { content: 'Cleanup Execute blockiert: Bitte zuerst "Cleanup prÃ¼fen" ausfÃ¼hren.', components: [] });
         }
 
         return safeReply(interaction, {
-            content: `Cleanup bereit. Wähle Kandidaten und bestätige danach explizit.`,
+            content: `Cleanup bereit. WÃ¤hle Kandidaten und bestÃ¤tige danach explizit.`,
             components: result.options.length ? [createCleanupSelectMenuRow(result.options)] : [],
             flags: 64
         });
@@ -156,21 +155,8 @@ module.exports = {
     async execute(interaction, config) {
         try {
             if (interaction.isChatInputCommand()) {
-                if (interaction.commandName === 'setup') {
-                    try {
-                        return await setupCommand.execute(interaction, config);
-                    } catch (err) {
-                        return safeInteractionError(interaction, err, 'Fehler beim Ausführen von /setup.');
-                    }
-                }
-
-                if (interaction.commandName === 'moderation') {
-                    try {
-                        return await moderationCommand.execute(interaction, config);
-                    } catch (err) {
-                        return safeInteractionError(interaction, err, 'Fehler beim Ausführen von /moderation.');
-                    }
-                }
+                const handled = await handleChatInputCommand(interaction, config);
+                if (handled) return;
                 return;
             }
 
@@ -197,7 +183,7 @@ module.exports = {
                     await safeDefer(interaction, 64);
                     const selected = getAdminSelection(interaction.guild.id, interaction.user.id);
                     if (!selected) {
-                        return safeEditReply(interaction, { content: 'Keine gültige Auswahl vorhanden. Bitte Cleanup prüfen und erneut auswählen.', components: [] });
+                        return safeEditReply(interaction, { content: 'Keine gÃ¼ltige Auswahl vorhanden. Bitte Cleanup prÃ¼fen und erneut auswÃ¤hlen.', components: [] });
                     }
 
                     const execution = await executeSelectedCleanup(interaction.guild, config, selected.selectedValues);
@@ -212,10 +198,10 @@ module.exports = {
                     }
 
                     const details = deletedLines.length
-                        ? `\nGelöscht:\n${deletedLines.join('\n')}`
-                        : '\nGelöscht:\n- nichts';
+                        ? `\nGelÃ¶scht:\n${deletedLines.join('\n')}`
+                        : '\nGelÃ¶scht:\n- nichts';
 
-                    return safeReplyWithSplit(interaction, `Cleanup ausgeführt. Gelöscht: ${execution.deleted.channels.length} Channels, ${execution.deleted.categories.length} Kategorien. Übersprungen: ${execution.skipped.length}.${details}`, {
+                    return safeReplyWithSplit(interaction, `Cleanup ausgefÃ¼hrt. GelÃ¶scht: ${execution.deleted.channels.length} Channels, ${execution.deleted.categories.length} Kategorien. Ãœbersprungen: ${execution.skipped.length}.${details}`, {
                         flags: 64
                     });
                 }
@@ -260,7 +246,7 @@ module.exports = {
                     if (denyIfNoManageGuild(interaction)) return;
                     setAdminSelection(interaction.guild.id, interaction.user.id, interaction.values);
                     return safeReply(interaction, {
-                        content: `Auswahl gespeichert (${interaction.values.length}). Bitte bestätigen.`,
+                        content: `Auswahl gespeichert (${interaction.values.length}). Bitte bestÃ¤tigen.`,
                         components: [createCleanupConfirmButtonsRow()],
                         flags: 64
                     });
@@ -291,7 +277,7 @@ module.exports = {
 
                         const section = sectionMap[selected];
                         if (!section) {
-                            return safeReply(interaction, { content: 'Ungültige Build-Auswahl.', flags: 64 });
+                            return safeReply(interaction, { content: 'UngÃ¼ltige Build-Auswahl.', flags: 64 });
                         }
 
                         const report = section === 'all'
@@ -362,12 +348,12 @@ module.exports = {
                         });
 
                         if (!result.ok) {
-                            return safeReply(interaction, { content: `Ankündigung fehlgeschlagen: ${result.reason}`, flags: 64 });
+                            return safeReply(interaction, { content: `AnkÃ¼ndigung fehlgeschlagen: ${result.reason}`, flags: 64 });
                         }
 
-                        return safeReply(interaction, { content: `Ankündigung veröffentlicht: ${result.message}`, flags: 64 });
+                        return safeReply(interaction, { content: `AnkÃ¼ndigung verÃ¶ffentlicht: ${result.message}`, flags: 64 });
                     } catch (err) {
-                        return safeInteractionError(interaction, err, 'Fehler bei der Ankündigung.');
+                        return safeInteractionError(interaction, err, 'Fehler bei der AnkÃ¼ndigung.');
                     }
                 }
             }

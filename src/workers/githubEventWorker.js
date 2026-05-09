@@ -4,6 +4,7 @@ const { QueueService } = require('../services/queueService');
 const { info } = require('../utils/logger');
 const { handleWorkerError } = require('../lib/handleWorkerError');
 const metrics = require('../lib/metrics');
+const { notifyDomainEvent } = require('../services/notificationService');
 
 const queueService = new QueueService(dbQueueAdapter);
 
@@ -22,6 +23,15 @@ async function processGithubEventsBatch(limit = 20) {
                     source: 'GITHUB',
                     eventType: `github.${activity.type}`,
                     content: activity
+                });
+
+                await notifyDomainEvent('github.activity.received', {
+                    projectId: activity.projectId,
+                    type: activity.type,
+                    summary: activity.summary,
+                    url: activity.url,
+                    actor: activity.actor,
+                    occurredAt: activity.occurredAt
                 });
             }
 

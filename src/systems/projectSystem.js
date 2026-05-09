@@ -6,6 +6,8 @@ const { safeReply } = require('../utils/discord');
 const { findForumChannel, findTextChannel } = require('../utils/resolvers');
 const { createProjectLog, findProjectByName } = require('../repositories/projectRepository');
 const { createProject, setDiscordThread } = require('../services/projectService');
+const { requireProjectRole } = require('../permissions/requireProjectRole');
+const { ProjectRole } = require('../domain/projectRole');
 
 function projectTemplate(projectUid, name, description, stack, status, type) {
     return [
@@ -100,6 +102,15 @@ async function addProjectLogFromModal(interaction, config) {
     const project = findProjectByName(interaction.guild.id, projectName);
     if (!project?.project_uid) {
         return safeReply(interaction, { content: `Project "${projectName}" not found in database.`, flags: 64 });
+    }
+
+    const permission = await requireProjectRole({
+        interaction,
+        projectId: project.project_uid,
+        allowed: [ProjectRole.PROJECT_LEAD, ProjectRole.MAINTAINER, ProjectRole.CONTRIBUTOR, ProjectRole.REVIEWER]
+    });
+    if (!permission.ok) {
+        return safeReply(interaction, { content: permission.reason, flags: 64 });
     }
 
     let thread = forum.threads.cache.find(t => t.id === project.thread_id);

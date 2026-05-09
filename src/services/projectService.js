@@ -6,6 +6,9 @@ const {
     createProjectLog,
     updateProjectThreadId,
     findProjectByName,
+    findProjectByUid,
+    archiveProject: archiveProjectRepository,
+    removeProjectMember,
 } = require('../repositories/projectRepository');
 
 function slugify(value) {
@@ -92,8 +95,56 @@ async function addProjectLog({ guildId, projectName, entry, userId }) {
     return project;
 }
 
+async function archiveProject(projectUid, userId) {
+    const project = await findProjectByUid(projectUid);
+    if (!project) return null;
+
+    await archiveProjectRepository(projectUid);
+    await createProjectLog({
+        projectUid,
+        source: 'SYSTEM',
+        eventType: 'project.archived',
+        content: { archivedBy: userId }
+    });
+
+    return project;
+}
+
+async function addProjectMember(projectUid, userId, role, actorId) {
+    const project = await findProjectByUid(projectUid);
+    if (!project) return null;
+
+    await upsertProjectMember({ projectUid, userId, role });
+    await createProjectLog({
+        projectUid,
+        source: 'SYSTEM',
+        eventType: 'project.member_added',
+        content: { userId, role, actorId }
+    });
+
+    return project;
+}
+
+async function removeMemberFromProject(projectUid, userId, actorId) {
+    const project = await findProjectByUid(projectUid);
+    if (!project) return null;
+
+    await removeProjectMember(projectUid, userId);
+    await createProjectLog({
+        projectUid,
+        source: 'SYSTEM',
+        eventType: 'project.member_removed',
+        content: { userId, actorId }
+    });
+
+    return project;
+}
+
 module.exports = {
     createProject,
     setDiscordThread,
-    addProjectLog
+    addProjectLog,
+    archiveProject,
+    addProjectMember,
+    removeMemberFromProject
 };

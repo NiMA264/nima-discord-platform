@@ -53,6 +53,18 @@ const statements = [
         closed_at TEXT
     );`,
     `CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks (project_uid, status, created_at);`,
+    `CREATE TABLE IF NOT EXISTS sprints (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sprint_uid TEXT NOT NULL UNIQUE,
+        project_uid TEXT NOT NULL,
+        title TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'ACTIVE',
+        started_by TEXT NOT NULL,
+        started_at TEXT NOT NULL,
+        closed_by TEXT,
+        closed_at TEXT
+    );`,
+    `CREATE INDEX IF NOT EXISTS idx_sprints_project ON sprints (project_uid, status, started_at);`,
     `CREATE TABLE IF NOT EXISTS github_webhook_events (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         guild_id TEXT,

@@ -6,6 +6,7 @@ const knowledgeCommand = require('../commands/knowledge');
 const devCommand = require('../commands/dev');
 const projectCommand = require('../commands/project');
 const taskCommand = require('../commands/task');
+const sprintCommand = require('../commands/sprint');
 const { safeInteractionError } = require('../utils/discord');
 
 const commandMap = {
@@ -16,7 +17,8 @@ const commandMap = {
     knowledge: knowledgeCommand,
     dev: devCommand,
     project: projectCommand,
-    task: taskCommand
+    task: taskCommand,
+    sprint: sprintCommand
 };
 
 async function handleChatInputCommand(interaction, config) {

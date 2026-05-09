@@ -10,6 +10,7 @@ const knowledgeCommand = require('./commands/knowledge');
 const devCommand = require('./commands/dev');
 const projectCommand = require('./commands/project');
 const taskCommand = require('./commands/task');
+const sprintCommand = require('./commands/sprint');
 
 function validateDeployEnv() {
     const result = validateEnv(process.env);
@@ -33,13 +34,14 @@ async function deploy() {
         knowledgeCommand.data.toJSON(),
         devCommand.data.toJSON(),
         projectCommand.data.toJSON(),
-        taskCommand.data.toJSON()
+        taskCommand.data.toJSON(),
+        sprintCommand.data.toJSON()
     ];
     const rest = new REST({ version: '10' }).setToken(token);
 
     console.log('[DEPLOY] Starting command deployment...');
     console.log(`[DEPLOY] Guild: ${guildId}`);
-    console.log('[DEPLOY] Replacing existing guild commands with: /setup, /moderation, /ask, /thread-summary, /knowledge, /dev, /project, /task');
+    console.log('[DEPLOY] Replacing existing guild commands with: /setup, /moderation, /ask, /thread-summary, /knowledge, /dev, /project, /task, /sprint');
 
     await rest.put(
         Routes.applicationGuildCommands(clientId, guildId),

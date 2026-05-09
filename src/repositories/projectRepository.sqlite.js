@@ -25,6 +25,11 @@ const statements = {
         WHERE project_uid = ?
         LIMIT 1
     `),
+    listByGuild: db.prepare(`
+        SELECT * FROM projects
+        WHERE guild_id = ?
+        ORDER BY id DESC
+    `),
     upsertProjectMember: db.prepare(`
         INSERT INTO project_members (project_uid, user_id, role, created_at)
         VALUES (?, ?, ?, ?)
@@ -82,6 +87,10 @@ async function findProjectByUid(projectUid) {
     return statements.findByUid.get(projectUid) || null;
 }
 
+async function listProjectsByGuild(guildId) {
+    return statements.listByGuild.all(guildId);
+}
+
 async function upsertProjectMember({ projectUid, userId, role = ProjectRole.CONTRIBUTOR, createdAt }) {
     return statements.upsertProjectMember.run(projectUid, userId, role, createdAt || new Date().toISOString());
 }
@@ -114,6 +123,7 @@ module.exports = {
     updateProjectThreadId,
     findProjectByName,
     findProjectByUid,
+    listProjectsByGuild,
     upsertProjectMember,
     removeProjectMember,
     archiveProject,

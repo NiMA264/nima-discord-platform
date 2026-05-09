@@ -48,6 +48,12 @@ async function findProjectByUid(projectUid) {
     return rowOrNull(rows);
 }
 
+async function listProjectsByGuild(guildId) {
+    if (useFallback()) return sqliteAdapter.listProjectsByGuild(guildId);
+    const prisma = getPrisma();
+    return prisma.$queryRaw`SELECT * FROM projects WHERE guild_id = ${guildId} ORDER BY id DESC`;
+}
+
 async function upsertProjectMember({ projectUid, userId, role = ProjectRole.CONTRIBUTOR, createdAt }) {
     if (useFallback()) return sqliteAdapter.upsertProjectMember({ projectUid, userId, role, createdAt });
     const prisma = getPrisma();
@@ -93,6 +99,7 @@ module.exports = {
     updateProjectThreadId,
     findProjectByName,
     findProjectByUid,
+    listProjectsByGuild,
     upsertProjectMember,
     removeProjectMember,
     archiveProject,

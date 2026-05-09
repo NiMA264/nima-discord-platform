@@ -1,14 +1,19 @@
-# Dashboard v1 (Phase 3A / Commit 1)
+# Dashboard v1 (Phase 3A)
 
 ## Scope
-This scaffold provides:
+Current dashboard capabilities:
 - Discord OAuth login
 - Session handling
 - Minimal protected layout
 - Server/Guild list view
+- Project list view
+- Project detail view
+- Activity feed view
+- Task overview
+- Sprint overview
 - API client boundary (`src/lib/apiClient.js`)
 
-It intentionally excludes project detail pages, activity feed views, role management UI, analytics, kanban, and AI UI.
+It intentionally excludes edit flows, drag and drop, realtime updates, analytics, kanban, and AI widgets.
 
 ## Setup
 1. Install dependencies:
@@ -37,8 +42,9 @@ Open: [http://localhost:3100](http://localhost:3100)
 2. Dashboard creates `state` and redirects to Discord authorize endpoint.
 3. Discord returns to `/auth/discord/callback`.
 4. Dashboard verifies `state`, exchanges `code` for token, stores session.
-5. Protected routes (`/app`, `/api/guilds`) read data through session.
+5. Protected routes read data through API boundaries.
 
-## Architecture Boundary
-Dashboard does not perform domain decisions.
-Dashboard consumes boundary APIs/routes and OAuth client abstractions.
+## Boundary Rules
+- Dashboard does not perform domain decisions.
+- Dashboard views only consume API/service boundaries.
+- Dashboard has no direct database access in UI routes/components.

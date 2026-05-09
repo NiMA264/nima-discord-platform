@@ -4,11 +4,13 @@ const { createSetupProjectsRow } = require('../components/buttons/setupButtons')
 const { createEmbed } = require('../utils/embed');
 const { safeReply } = require('../utils/discord');
 const { findForumChannel, findTextChannel } = require('../utils/resolvers');
-const { createProject } = require('../repositories/projectRepository');
+const { createProjectLog, findProjectByName } = require('../repositories/projectRepository');
+const { createProject, setDiscordThread } = require('../services/projectService');
 
-function projectTemplate(name, description, stack, status, type) {
+function projectTemplate(projectUid, name, description, stack, status, type) {
     return [
         `## Project: ${name}`,
+        `ID: ${projectUid}`,
         '',
         '### Overview',
         description,
@@ -63,21 +65,24 @@ async function createProjectFromModal(interaction, config) {
         return safeReply(interaction, { content: 'Projects forum not found.', flags: 64 });
     }
 
-    const thread = await forum.threads.create({
-        name,
-        message: { content: projectTemplate(name, description, stack, status, type) }
-    });
-
-    createProject({
+    const projectRecord = createProject({
         guildId: interaction.guild.id,
-        threadId: thread.id,
         creatorId: interaction.user.id,
         name,
         description,
         stack,
         status,
+        type,
+        forumChannelId: forum.id,
         createdAt: new Date().toISOString()
     });
+
+    const thread = await forum.threads.create({
+        name,
+        message: { content: projectTemplate(projectRecord.projectUid, name, description, stack, status, type) }
+    });
+
+    setDiscordThread(projectRecord.projectUid, thread.id);
 
     return safeReply(interaction, { content: `Project created: ${thread}`, flags: 64 });
 }
@@ -92,10 +97,15 @@ async function addProjectLogFromModal(interaction, config) {
         return safeReply(interaction, { content: 'Projects forum not found.', flags: 64 });
     }
 
-    let thread = forum.threads.cache.find(t => t.name.toLowerCase() === projectName.toLowerCase());
+    const project = findProjectByName(interaction.guild.id, projectName);
+    if (!project?.project_uid) {
+        return safeReply(interaction, { content: `Project "${projectName}" not found in database.`, flags: 64 });
+    }
+
+    let thread = forum.threads.cache.find(t => t.id === project.thread_id);
     if (!thread) {
         const fetched = await forum.threads.fetchActive();
-        thread = fetched.threads.find(t => t.name.toLowerCase() === projectName.toLowerCase());
+        thread = fetched.threads.find(t => t.id === project.thread_id);
     }
 
     if (!thread || thread.type !== ChannelType.PublicThread) {
@@ -104,6 +114,16 @@ async function addProjectLogFromModal(interaction, config) {
 
     const logEntry = `#### ${new Date().toLocaleDateString('de-DE')}\n- ${entry}`;
     await thread.send({ content: logEntry });
+    createProjectLog({
+        projectUid: project.project_uid,
+        source: 'DISCORD',
+        eventType: 'project.log_added',
+        content: {
+            entry,
+            userId: interaction.user.id,
+            threadId: project.thread_id
+        }
+    });
 
     return safeReply(interaction, { content: `Log entry added to project "${projectName}".`, flags: 64 });
 }

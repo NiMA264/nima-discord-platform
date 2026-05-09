@@ -8,7 +8,7 @@ const projectCommand = require('../commands/project');
 const taskCommand = require('../commands/task');
 const sprintCommand = require('../commands/sprint');
 const aiCommand = require('../commands/ai');
-const { safeInteractionError } = require('../utils/discord');
+const { handleCommandError } = require('../lib/handleCommandError');
 
 const commandMap = {
     setup: setupCommand,
@@ -31,7 +31,7 @@ async function handleChatInputCommand(interaction, config) {
         await handler.execute(interaction, config);
         return true;
     } catch (err) {
-        await safeInteractionError(interaction, err, `Fehler beim Ausführen von /${interaction.commandName}.`);
+        await handleCommandError(interaction, err, `Fehler beim Ausführen von /${interaction.commandName}.`);
         return true;
     }
 }

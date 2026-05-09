@@ -1,6 +1,7 @@
 const http = require('http');
 const { ingestGithubWebhook } = require('./githubWebhookIngest');
-const { info, warn, error } = require('../../utils/logger');
+const { info, warn } = require('../../utils/logger');
+const { handleWorkerError } = require('../../lib/handleWorkerError');
 
 function startGithubWebhookServer() {
     const enabled = process.env.GITHUB_WEBHOOK_ENABLED === 'true';
@@ -31,7 +32,7 @@ function startGithubWebhookServer() {
                 res.setHeader('content-type', 'application/json');
                 res.end(JSON.stringify({ ok: result.ok, message: result.message }));
             } catch (err) {
-                error('GitHub webhook ingestion failed', { error: err.message });
+                handleWorkerError('githubWebhookServer', err);
                 res.statusCode = 500;
                 res.end(JSON.stringify({ ok: false, message: 'Webhook ingestion failed' }));
             }

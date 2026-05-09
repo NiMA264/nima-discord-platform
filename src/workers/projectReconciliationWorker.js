@@ -1,5 +1,6 @@
 const { runProjectReconciliation } = require('../reconciliation/projectReconciliation');
-const { info, error } = require('../utils/logger');
+const { info } = require('../utils/logger');
+const { handleWorkerError } = require('../lib/handleWorkerError');
 
 let timer;
 
@@ -23,7 +24,7 @@ function startProjectReconciliationWorker(client) {
             try {
                 await reconcileGuild(guild);
             } catch (err) {
-                error('Project reconciliation failed', { guildId: guild.id, error: err.message });
+                handleWorkerError('projectReconciliationWorker', err, { guildId: guild.id });
             }
         }
     }, intervalMs);

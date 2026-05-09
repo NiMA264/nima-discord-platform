@@ -1,7 +1,8 @@
 const { createProjectLog } = require('../repositories/projectRepository');
-const { info, error } = require('../utils/logger');
 const dbQueueAdapter = require('../queues/dbQueueAdapter');
 const { QueueService } = require('../services/queueService');
+const { info } = require('../utils/logger');
+const { handleWorkerError } = require('../lib/handleWorkerError');
 
 const queueService = new QueueService(dbQueueAdapter);
 
@@ -25,7 +26,7 @@ async function processGithubEventsBatch(limit = 20) {
             await queueService.ack('github_events', event.id);
         } catch (err) {
             await queueService.fail('github_events', event.id, err.message);
-            error('Failed to process github webhook event', { id: event.id, error: err.message });
+            handleWorkerError('githubEventWorker', err, { eventId: event.id });
         }
     }
 

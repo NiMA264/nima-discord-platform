@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const config = require('./config');
 const { initializeDatabase } = require('./database/database');
+const { ensurePhase1Persistence } = require('./database/phase1PersistenceMigration');
 const { validateEnv } = require('./utils/envValidator');
 const { info, error: logError, formatError, dbInfo } = require('./utils/logger');
 
@@ -71,6 +72,7 @@ function validateStartupEnv() {
 
 function initializePersistenceLayer() {
     initializeDatabase();
+    ensurePhase1Persistence();
     dbInfo('Persistence layer ready');
 }
 

@@ -17,11 +17,11 @@ function startGithubWebhookServer() {
         const chunks = [];
         req.on('data', chunk => chunks.push(chunk));
 
-        req.on('end', () => {
+        req.on('end', async () => {
             try {
                 const rawBody = Buffer.concat(chunks).toString('utf8');
                 const body = rawBody ? JSON.parse(rawBody) : {};
-                const result = ingestGithubWebhook({
+                const result = await ingestGithubWebhook({
                     headers: req.headers,
                     rawBody,
                     body

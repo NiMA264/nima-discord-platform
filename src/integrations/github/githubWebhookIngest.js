@@ -1,6 +1,9 @@
 const crypto = require('crypto');
-const { enqueueGithubEvent } = require('./githubEventQueue');
 const { normalizeGithubEvent } = require('./normalizeGithubEvent');
+const dbQueueAdapter = require('../../queues/dbQueueAdapter');
+const { QueueService } = require('../../services/queueService');
+
+const queueService = new QueueService(dbQueueAdapter);
 
 function validateGithubSignature(secret, rawBody, signatureHeader) {
     if (!secret) return true;
@@ -19,7 +22,7 @@ function validateGithubSignature(secret, rawBody, signatureHeader) {
     return crypto.timingSafeEqual(expectedBuffer, incomingBuffer);
 }
 
-function ingestGithubWebhook({ headers, rawBody, body }) {
+async function ingestGithubWebhook({ headers, rawBody, body }) {
     const eventName = headers['x-github-event'];
     if (!eventName) {
         return { ok: false, statusCode: 400, message: 'Missing x-github-event header' };
@@ -37,16 +40,19 @@ function ingestGithubWebhook({ headers, rawBody, body }) {
         return { ok: false, statusCode: 400, message: 'Missing project ID in event payload' };
     }
 
-    enqueueGithubEvent({
-        guildId: body?.guildId || null,
-        projectUid: activity.projectId,
-        eventName,
-        deliveryId,
-        payload: {
+    await queueService.enqueue(
+        'github_events',
+        {
             activity,
             raw: body
+        },
+        {
+            guildId: body?.guildId || null,
+            projectId: activity.projectId,
+            eventName,
+            deliveryId
         }
-    });
+    );
 
     return { ok: true, statusCode: 202, message: 'Event queued' };
 }

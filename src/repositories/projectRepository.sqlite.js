@@ -36,6 +36,12 @@ const statements = {
         WHERE guild_id = ?
         ORDER BY id DESC
     `),
+    listMembersByProject: db.prepare(`
+        SELECT user_id, role, created_at
+        FROM project_members
+        WHERE project_uid = ?
+        ORDER BY created_at ASC
+    `),
     upsertProjectMember: db.prepare(`
         INSERT INTO project_members (project_uid, user_id, role, created_at)
         VALUES (?, ?, ?, ?)
@@ -111,6 +117,10 @@ async function listProjectsByGuild(guildId) {
     return statements.listByGuild.all(guildId);
 }
 
+async function listProjectMembers(projectUid) {
+    return statements.listMembersByProject.all(projectUid);
+}
+
 async function upsertProjectMember({ projectUid, userId, role = ProjectRole.CONTRIBUTOR, createdAt }) {
     return statements.upsertProjectMember.run(projectUid, userId, role, createdAt || new Date().toISOString());
 }
@@ -145,6 +155,7 @@ module.exports = {
     findProjectByUid,
     listProjectLogs,
     listProjectsByGuild,
+    listProjectMembers,
     upsertProjectMember,
     removeProjectMember,
     archiveProject,

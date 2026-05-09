@@ -11,7 +11,16 @@ const {
     buildAuthorizeUrl
 } = require('./lib/discordOAuthClient');
 const { createApiClient } = require('./lib/apiClient');
-const { listProjectsForGuild, getProjectDashboardView } = require('./lib/platformServiceClient');
+const {
+    listProjectsForGuild,
+    getProjectDashboardView,
+    listRoleBindingsForGuild,
+    updateRoleBinding,
+    updateProjectMemberRole,
+    isGuildAdmin
+} = require('./lib/platformServiceClient');
+
+const PROJECT_ROLES = ['PROJECT_LEAD', 'MAINTAINER', 'REVIEWER', 'CONTRIBUTOR'];
 
 function renderLayout({ title, body, user }) {
     return `<!doctype html>
@@ -30,6 +39,10 @@ function renderLayout({ title, body, user }) {
     .guild:last-child, .item:last-child { border-bottom:none; }
     .meta { color: #aab6df; font-size: 12px; }
     .row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .flash-ok { color:#6ee7b7; }
+    .flash-error { color:#fca5a5; }
+    input, select, button { padding: 6px 8px; margin-right:8px; }
+    form { margin-top: 10px; }
   </style>
 </head>
 <body>
@@ -53,12 +66,33 @@ function renderErrorCard(title, message) {
     return `<div class="card"><h2>${title}</h2><p>${message}</p></div>`;
 }
 
+function roleOptions(selected) {
+    return PROJECT_ROLES.map(role => `<option value="${role}"${selected === role ? ' selected' : ''}>${role}</option>`).join('');
+}
+
+function setGuildMembershipCache(req, guilds) {
+    req.session.guildMemberships = Object.fromEntries(guilds.map(g => [g.id, g]));
+}
+
+function getGuildMembership(req, guildId) {
+    return req.session.guildMemberships?.[guildId] || null;
+}
+
+function flashFromQuery(query) {
+    const type = String(query?.flashType || '');
+    const message = String(query?.flash || '');
+    if (!message) return '';
+    const klass = type === 'ok' ? 'flash-ok' : 'flash-error';
+    return `<p class="${klass}">${message}</p>`;
+}
+
 function createDashboardServer() {
     const env = loadDashboardEnv(process.env);
     const app = express();
     const apiClient = createApiClient({ baseUrl: `http://127.0.0.1:${env.port}` });
 
     app.use(createSessionMiddleware(env.sessionSecret));
+    app.use(express.urlencoded({ extended: false }));
 
     app.get('/', (req, res) => {
         if (!req.session?.accessToken) {
@@ -111,6 +145,7 @@ function createDashboardServer() {
     app.get('/api/guilds', requireAuth, async (req, res) => {
         try {
             const guilds = await fetchUserGuilds(req.session.accessToken);
+            setGuildMembershipCache(req, guilds);
             res.json({ guilds });
         } catch (err) {
             res.status(502).json({ error: `Guild fetch failed: ${err.message}` });
@@ -134,6 +169,58 @@ function createDashboardServer() {
             res.json(detail);
         } catch (err) {
             res.status(500).json({ error: `Project detail failed: ${err.message}` });
+        }
+    });
+
+    app.get('/api/guilds/:guildId/role-bindings', requireAuth, async (req, res) => {
+        try {
+            const guildId = String(req.params.guildId || '');
+            const roleBindings = listRoleBindingsForGuild(guildId);
+            res.json({ roleBindings });
+        } catch (err) {
+            res.status(500).json({ error: `Role binding list failed: ${err.message}` });
+        }
+    });
+
+    app.post('/api/guilds/:guildId/role-bindings', requireAuth, express.json(), async (req, res) => {
+        try {
+            const guildId = String(req.params.guildId || '');
+            const actorGuildMembership = getGuildMembership(req, guildId);
+
+            const result = updateRoleBinding({
+                actorGuildMembership,
+                guildId,
+                discordRoleId: String(req.body.discordRoleId || ''),
+                projectRole: String(req.body.projectRole || '')
+            });
+
+            if (!result.ok) {
+                return res.status(result.status).json({ error: result.error });
+            }
+
+            return res.json({ ok: true });
+        } catch (err) {
+            return res.status(500).json({ error: `Role binding update failed: ${err.message}` });
+        }
+    });
+
+    app.post('/api/projects/:projectId/members', requireAuth, express.json(), async (req, res) => {
+        try {
+            const projectId = String(req.params.projectId || '');
+            const result = await updateProjectMemberRole({
+                actorUserId: req.session.user.id,
+                projectId,
+                targetUserId: String(req.body.targetUserId || ''),
+                targetRole: String(req.body.targetRole || '')
+            });
+
+            if (!result.ok) {
+                return res.status(result.status).json({ error: result.error });
+            }
+
+            return res.json({ ok: true });
+        } catch (err) {
+            return res.status(500).json({ error: `Project member update failed: ${err.message}` });
         }
     });
 
@@ -164,7 +251,11 @@ function createDashboardServer() {
         const guildId = String(req.params.guildId || '');
 
         try {
-            const { projects } = await apiClient.getProjects(req.session.accessToken, guildId);
+            const [{ projects }, { roleBindings }] = await Promise.all([
+                apiClient.getProjects(req.session.accessToken, guildId),
+                apiClient.getRoleBindings(req.session.accessToken, guildId)
+            ]);
+
             const rows = projects.length
                 ? projects.map(project => `
                     <div class="item">
@@ -174,11 +265,32 @@ function createDashboardServer() {
                     </div>`).join('')
                 : '<div>No projects found for this guild.</div>';
 
+            const bindingRows = roleBindings.length
+                ? roleBindings.map(binding => `<div class="item"><strong>${binding.project_role}</strong> -> ${binding.discord_role_id}</div>`).join('')
+                : '<div>No role bindings configured.</div>';
+
+            const flash = flashFromQuery(req.query);
+            const isAdmin = isGuildAdmin(getGuildMembership(req, guildId));
+
+            const roleBindingForm = isAdmin
+                ? `<form method="post" action="/app/guild/${guildId}/role-bindings">
+                    <input type="text" name="discordRoleId" placeholder="Discord Role ID" required />
+                    <select name="projectRole">${roleOptions('CONTRIBUTOR')}</select>
+                    <button type="submit">Save Binding</button>
+                </form>`
+                : '<p class="meta">Guild admin permission is required to change role bindings.</p>';
+
             const body = [
                 '<div class="card">',
                 `<h1>Projects (${guildId})</h1>`,
+                flash,
                 '<p><a href="/app">Back to servers</a></p>',
                 rows,
+                '</div>',
+                '<div class="card">',
+                '<h2>Guild Role Bindings</h2>',
+                bindingRows,
+                roleBindingForm,
                 '</div>'
             ].join('');
 
@@ -193,6 +305,20 @@ function createDashboardServer() {
             ].join('');
 
             return res.status(500).send(renderLayout({ title: 'Project List Error', body, user: req.session.user }));
+        }
+    });
+
+    app.post('/app/guild/:guildId/role-bindings', requireAuth, async (req, res) => {
+        const guildId = String(req.params.guildId || '');
+        try {
+            await apiClient.updateRoleBinding(req.session.accessToken, guildId, {
+                discordRoleId: String(req.body.discordRoleId || ''),
+                projectRole: String(req.body.projectRole || '')
+            });
+
+            return res.redirect(`/app/guild/${guildId}/projects?flashType=ok&flash=Role%20binding%20saved`);
+        } catch (err) {
+            return res.redirect(`/app/guild/${guildId}/projects?flashType=error&flash=${encodeURIComponent(err.message)}`);
         }
     });
 
@@ -215,9 +341,25 @@ function createDashboardServer() {
                 ? detail.sprints.map(sprint => `<div class="item"><strong>${sprint.title}</strong><div class="meta">${sprint.sprint_uid} | status=${sprint.status}</div></div>`).join('')
                 : '<div>No sprints yet.</div>';
 
+            const memberRows = detail.members.length
+                ? detail.members.map(member => `
+                    <div class="item">
+                        <strong>${member.user_id}</strong>
+                        <div class="meta">role=${member.role}</div>
+                        <form method="post" action="/app/projects/${projectId}/members">
+                            <input type="hidden" name="targetUserId" value="${member.user_id}" />
+                            <select name="targetRole">${roleOptions(member.role)}</select>
+                            <button type="submit">Update Role</button>
+                        </form>
+                    </div>`).join('')
+                : '<div>No members yet.</div>';
+
+            const flash = flashFromQuery(req.query);
+
             const body = [
                 '<div class="card">',
                 `<h1>${project.name}</h1>`,
+                flash,
                 `<div class="meta">${project.project_uid} | status=${project.status}</div>`,
                 '<p><a href="/app">Back to servers</a></p>',
                 `<p>Counts: logs=${detail.counts.logs}, tasks=${detail.counts.tasks}, sprints=${detail.counts.sprints}</p>`,
@@ -226,6 +368,7 @@ function createDashboardServer() {
                 `<div class="card"><h2>Task Overview</h2>${taskRows}</div>`,
                 `<div class="card"><h2>Sprint Overview</h2>${sprintRows}</div>`,
                 '</div>',
+                `<div class="card"><h2>Project Members</h2>${memberRows}</div>`,
                 `<div class="card"><h2>Activity Feed</h2>${feedRows}</div>`
             ].join('');
 
@@ -234,6 +377,20 @@ function createDashboardServer() {
             const status = err.message.includes('404') ? 404 : 500;
             const body = renderErrorCard('Project Detail Error', `Unable to load project: ${err.message}`);
             return res.status(status).send(renderLayout({ title: 'Project Detail Error', body, user: req.session.user }));
+        }
+    });
+
+    app.post('/app/projects/:projectId/members', requireAuth, async (req, res) => {
+        const projectId = String(req.params.projectId || '');
+        try {
+            await apiClient.updateProjectMemberRole(req.session.accessToken, projectId, {
+                targetUserId: String(req.body.targetUserId || ''),
+                targetRole: String(req.body.targetRole || '')
+            });
+
+            return res.redirect(`/app/projects/${projectId}?flashType=ok&flash=Member%20role%20updated`);
+        } catch (err) {
+            return res.redirect(`/app/projects/${projectId}?flashType=error&flash=${encodeURIComponent(err.message)}`);
         }
     });
 

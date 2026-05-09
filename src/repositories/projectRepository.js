@@ -72,6 +72,17 @@ async function listProjectsByGuild(guildId) {
     return prisma.$queryRaw`SELECT * FROM projects WHERE guild_id = ${guildId} ORDER BY id DESC`;
 }
 
+async function listProjectMembers(projectUid) {
+    if (useFallback()) return sqliteAdapter.listProjectMembers(projectUid);
+    const prisma = getPrisma();
+    return prisma.$queryRaw`
+        SELECT user_id, role, created_at
+        FROM project_members
+        WHERE project_uid = ${projectUid}
+        ORDER BY created_at ASC
+    `;
+}
+
 async function upsertProjectMember({ projectUid, userId, role = ProjectRole.CONTRIBUTOR, createdAt }) {
     if (useFallback()) return sqliteAdapter.upsertProjectMember({ projectUid, userId, role, createdAt });
     const prisma = getPrisma();
@@ -119,6 +130,7 @@ module.exports = {
     findProjectByUid,
     listProjectLogs,
     listProjectsByGuild,
+    listProjectMembers,
     upsertProjectMember,
     removeProjectMember,
     archiveProject,

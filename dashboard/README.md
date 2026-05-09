@@ -11,9 +11,11 @@ Current dashboard capabilities:
 - Activity feed view
 - Task overview
 - Sprint overview
+- Guild role bindings view/update controls
+- Project member view/update role controls
 - API client boundary (`src/lib/apiClient.js`)
 
-It intentionally excludes edit flows, drag and drop, realtime updates, analytics, kanban, and AI widgets.
+It intentionally excludes invite flows, permission matrix UI, audit timeline, bulk actions, realtime updates, analytics, kanban, and AI widgets.
 
 ## Setup
 1. Install dependencies:
@@ -48,3 +50,4 @@ Open: [http://localhost:3100](http://localhost:3100)
 - Dashboard does not perform domain decisions.
 - Dashboard views only consume API/service boundaries.
 - Dashboard has no direct database access in UI routes/components.
+- Permission enforcement remains server-side for all mutations.

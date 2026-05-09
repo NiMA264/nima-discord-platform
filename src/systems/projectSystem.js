@@ -4,8 +4,8 @@ const { createSetupProjectsRow } = require('../components/buttons/setupButtons')
 const { createEmbed } = require('../utils/embed');
 const { safeReply } = require('../utils/discord');
 const { findForumChannel, findTextChannel } = require('../utils/resolvers');
-const { createProjectLog, findProjectByName } = require('../repositories/projectRepository');
-const { createProject, setDiscordThread } = require('../services/projectService');
+const { findProjectByName } = require('../repositories/projectRepository');
+const { createProject, setDiscordThread, addProjectLog } = require('../services/projectService');
 const { requireProjectRole } = require('../permissions/requireProjectRole');
 const { ProjectRole } = require('../domain/projectRole');
 
@@ -67,7 +67,7 @@ async function createProjectFromModal(interaction, config) {
         return safeReply(interaction, { content: 'Projects forum not found.', flags: 64 });
     }
 
-    const projectRecord = createProject({
+    const projectRecord = await createProject({
         guildId: interaction.guild.id,
         creatorId: interaction.user.id,
         name,
@@ -84,7 +84,7 @@ async function createProjectFromModal(interaction, config) {
         message: { content: projectTemplate(projectRecord.projectUid, name, description, stack, status, type) }
     });
 
-    setDiscordThread(projectRecord.projectUid, thread.id);
+    await setDiscordThread(projectRecord.projectUid, thread.id);
 
     return safeReply(interaction, { content: `Project created: ${thread}`, flags: 64 });
 }
@@ -99,7 +99,7 @@ async function addProjectLogFromModal(interaction, config) {
         return safeReply(interaction, { content: 'Projects forum not found.', flags: 64 });
     }
 
-    const project = findProjectByName(interaction.guild.id, projectName);
+    const project = await findProjectByName(interaction.guild.id, projectName);
     if (!project?.project_uid) {
         return safeReply(interaction, { content: `Project "${projectName}" not found in database.`, flags: 64 });
     }
@@ -125,15 +125,11 @@ async function addProjectLogFromModal(interaction, config) {
 
     const logEntry = `#### ${new Date().toLocaleDateString('de-DE')}\n- ${entry}`;
     await thread.send({ content: logEntry });
-    createProjectLog({
-        projectUid: project.project_uid,
-        source: 'DISCORD',
-        eventType: 'project.log_added',
-        content: {
-            entry,
-            userId: interaction.user.id,
-            threadId: project.thread_id
-        }
+    await addProjectLog({
+        guildId: interaction.guild.id,
+        projectName,
+        entry,
+        userId: interaction.user.id
     });
 
     return safeReply(interaction, { content: `Log entry added to project "${projectName}".`, flags: 64 });

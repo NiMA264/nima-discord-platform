@@ -4,7 +4,8 @@ const {
     createProjectEntity,
     upsertProjectMember,
     createProjectLog,
-    updateProjectThreadId
+    updateProjectThreadId,
+    findProjectByName,
 } = require('../repositories/projectRepository');
 
 function slugify(value) {
@@ -20,11 +21,11 @@ function generateProjectUid() {
     return crypto.randomUUID();
 }
 
-function createProject(payload) {
+async function createProject(payload) {
     const projectUid = generateProjectUid();
     const slug = `${slugify(payload.name)}-${projectUid.slice(0, 8)}`;
 
-    createProjectEntity({
+    await createProjectEntity({
         projectUid,
         guildId: payload.guildId,
         threadId: 'pending',
@@ -38,14 +39,14 @@ function createProject(payload) {
         createdAt: payload.createdAt
     });
 
-    upsertProjectMember({
+    await upsertProjectMember({
         projectUid,
         userId: payload.creatorId,
         role: ProjectRole.PROJECT_LEAD,
         createdAt: payload.createdAt
     });
 
-    createProjectLog({
+    await createProjectLog({
         projectUid,
         source: 'DISCORD',
         eventType: 'project.created',
@@ -63,9 +64,9 @@ function createProject(payload) {
     return { projectUid, slug };
 }
 
-function setDiscordThread(projectUid, threadId) {
-    updateProjectThreadId(projectUid, threadId);
-    createProjectLog({
+async function setDiscordThread(projectUid, threadId) {
+    await updateProjectThreadId(projectUid, threadId);
+    await createProjectLog({
         projectUid,
         source: 'SYSTEM',
         eventType: 'project.thread_linked',
@@ -73,7 +74,26 @@ function setDiscordThread(projectUid, threadId) {
     });
 }
 
+async function addProjectLog({ guildId, projectName, entry, userId }) {
+    const project = await findProjectByName(guildId, projectName);
+    if (!project) return null;
+
+    await createProjectLog({
+        projectUid: project.project_uid,
+        source: 'DISCORD',
+        eventType: 'project.log_added',
+        content: {
+            entry,
+            userId,
+            threadId: project.thread_id
+        }
+    });
+
+    return project;
+}
+
 module.exports = {
     createProject,
-    setDiscordThread
+    setDiscordThread,
+    addProjectLog
 };

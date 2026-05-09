@@ -11,12 +11,12 @@ async function requireProjectRole({ interaction, projectId, allowed }) {
         return { ok: true };
     }
 
-    const project = findProjectByUid(projectId);
+    const project = await findProjectByUid(projectId);
     if (!project || project.guild_id !== interaction.guild.id) {
         return { ok: false, reason: 'Project not found.' };
     }
 
-    const memberRole = findProjectMemberRole(projectId, interaction.user.id);
+    const memberRole = await findProjectMemberRole(projectId, interaction.user.id);
     if (memberRole && allowed.includes(memberRole)) {
         return { ok: true };
     }

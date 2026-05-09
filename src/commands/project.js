@@ -7,7 +7,8 @@ const {
     addProjectLog,
     archiveProject,
     addProjectMember,
-    removeMemberFromProject
+    removeMemberFromProject,
+    repairProject
 } = require('../services/projectService');
 const { findProjectByName } = require('../repositories/projectRepository');
 const { requireProjectRole } = require('../permissions/requireProjectRole');
@@ -58,6 +59,12 @@ module.exports = {
             sub
                 .setName('archive')
                 .setDescription('Archive project by ID')
+                .addStringOption(opt => opt.setName('project_id').setDescription('Project UID').setRequired(true))
+        )
+        .addSubcommand(sub =>
+            sub
+                .setName('repair')
+                .setDescription('Repair project consistency by ID')
                 .addStringOption(opt => opt.setName('project_id').setDescription('Project UID').setRequired(true))
         )
         .addSubcommand(sub =>
@@ -184,6 +191,34 @@ module.exports = {
             if (!archived) return safeReply(interaction, { content: 'Project not found.', flags: 64 });
 
             return safeReply(interaction, { content: `Project archived: ${archived.name} (${projectId})`, flags: 64 });
+        }
+
+        if (sub === 'repair') {
+            const projectId = interaction.options.getString('project_id', true);
+            const permission = await requireProjectRole({
+                interaction,
+                projectId,
+                allowed: [ProjectRole.PROJECT_LEAD, ProjectRole.MAINTAINER]
+            });
+            if (!permission.ok) return safeReply(interaction, { content: permission.reason, flags: 64 });
+
+            const repaired = await repairProject({
+                guild: interaction.guild,
+                projectId,
+                actorId: interaction.user.id
+            });
+            if (!repaired) return safeReply(interaction, { content: 'Project not found.', flags: 64 });
+
+            const report = [
+                `Repair report for ${repaired.project.name} (${projectId})`,
+                `beforeIssues: ${repaired.before.issueCount}`,
+                `actions: ${repaired.actions.length}`,
+                `afterIssues: ${repaired.after.issueCount}`,
+                `issueSummaryBefore: ${JSON.stringify(repaired.before.issueSummary)}`,
+                `issueSummaryAfter: ${JSON.stringify(repaired.after.issueSummary)}`
+            ].join('\n');
+
+            return safeReply(interaction, { content: `\`\`\`txt\n${report}\n\`\`\``, flags: 64 });
         }
 
         if (group === 'member' && sub === 'add') {

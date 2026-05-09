@@ -44,6 +44,22 @@ async function evaluateProject(guild, project) {
     return issues;
 }
 
+async function inspectSingleProject(guild, project) {
+    const issues = await evaluateProject(guild, project);
+    const grouped = issues.reduce((acc, issue) => {
+        acc[issue.type] = (acc[issue.type] || 0) + 1;
+        return acc;
+    }, {});
+
+    return {
+        guildId: guild.id,
+        scannedProjects: 1,
+        issueCount: issues.length,
+        issueSummary: grouped,
+        issues
+    };
+}
+
 async function runProjectReconciliation(guild) {
     const projects = await listProjectsByGuild(guild.id);
     const issues = [];
@@ -68,5 +84,6 @@ async function runProjectReconciliation(guild) {
 }
 
 module.exports = {
-    runProjectReconciliation
+    runProjectReconciliation,
+    inspectSingleProject
 };

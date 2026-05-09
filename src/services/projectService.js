@@ -10,6 +10,7 @@ const {
     archiveProject: archiveProjectRepository,
     removeProjectMember,
 } = require('../repositories/projectRepository');
+const { inspectSingleProject } = require('../reconciliation/projectReconciliation');
 
 function slugify(value) {
     return value
@@ -140,11 +141,67 @@ async function removeMemberFromProject(projectUid, userId, actorId) {
     return project;
 }
 
+async function repairProject({ guild, projectId, actorId }) {
+    const project = await findProjectByUid(projectId);
+    if (!project) return null;
+
+    const report = await inspectSingleProject(guild, project);
+    const actions = [];
+
+    for (const issue of report.issues) {
+        if (issue.type === 'name_drift' && issue.details?.threadId) {
+            const thread = guild.channels.cache.get(issue.details.threadId)
+                || await guild.channels.fetch(issue.details.threadId).catch(() => null);
+            if (thread) {
+                await thread.setName(project.name);
+                actions.push({ type: 'rename_thread', threadId: thread.id, name: project.name });
+            }
+        }
+
+        if (issue.type === 'missing_thread') {
+            const forum = project.forum_channel_id
+                ? guild.channels.cache.get(project.forum_channel_id) || await guild.channels.fetch(project.forum_channel_id).catch(() => null)
+                : null;
+
+            if (forum?.threads?.create) {
+                const recreated = await forum.threads.create({
+                    name: project.name,
+                    message: {
+                        content: `## Project: ${project.name}\nID: ${project.project_uid}\n\n### Recovery\nThread recreated by repair.`
+                    }
+                });
+                await updateProjectThreadId(project.project_uid, recreated.id);
+                actions.push({ type: 'recreate_thread', threadId: recreated.id });
+            }
+        }
+    }
+
+    await createProjectLog({
+        projectUid: project.project_uid,
+        source: 'SYSTEM',
+        eventType: 'project.repaired',
+        content: {
+            actorId,
+            actions,
+            previousIssues: report.issues
+        }
+    });
+
+    const postRepair = await inspectSingleProject(guild, await findProjectByUid(project.project_uid));
+    return {
+        project,
+        before: report,
+        actions,
+        after: postRepair
+    };
+}
+
 module.exports = {
     createProject,
     setDiscordThread,
     addProjectLog,
     archiveProject,
     addProjectMember,
-    removeMemberFromProject
+    removeMemberFromProject,
+    repairProject
 };

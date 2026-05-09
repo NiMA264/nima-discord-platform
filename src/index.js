@@ -10,6 +10,7 @@ const { assertEnvironment } = require('./config/env');
 const { info, error: logError, formatError, dbInfo } = require('./utils/logger');
 const { startGithubWebhookServer } = require('./integrations/github/githubWebhookServer');
 const { startGithubEventWorker } = require('./workers/githubEventWorker');
+const { startScheduledDigestWorker } = require('./workers/digestWorker');
 const { registerNotificationAdapter } = require('./services/notificationService');
 const {
     createDiscordNotificationAdapter,
@@ -88,11 +89,17 @@ function initializeNotificationLayer() {
     info('Notification layer ready');
 }
 
+function initializeAutomationLayer() {
+    startScheduledDigestWorker(client);
+    info('Automation layer ready');
+}
+
 async function bootstrap() {
     registerGlobalErrorHandlers();
     validateStartupEnv();
     initializePersistenceLayer();
     initializeNotificationLayer();
+    initializeAutomationLayer();
 
     info('Starting NiMa Discord bot', {
         guildId: config.guildId,

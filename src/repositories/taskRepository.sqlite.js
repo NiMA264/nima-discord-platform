@@ -12,6 +12,9 @@ const statements = {
     findByUid: db.prepare(`
         SELECT * FROM tasks WHERE task_uid = ? LIMIT 1
     `),
+    listByProject: db.prepare(`
+        SELECT * FROM tasks WHERE project_uid = ? ORDER BY created_at DESC LIMIT ?
+    `),
     assignTask: db.prepare(`
         UPDATE tasks SET assigned_to = ? WHERE task_uid = ?
     `),
@@ -37,6 +40,10 @@ async function findTaskByUid(taskUid) {
     return statements.findByUid.get(taskUid) || null;
 }
 
+async function listTasksByProject(projectUid, limit = 50) {
+    return statements.listByProject.all(projectUid, limit);
+}
+
 async function assignTask(taskUid, assignedTo) {
     return statements.assignTask.run(assignedTo, taskUid);
 }
@@ -48,6 +55,7 @@ async function closeTask(taskUid) {
 module.exports = {
     createTask,
     findTaskByUid,
+    listTasksByProject,
     assignTask,
     closeTask
 };

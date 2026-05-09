@@ -25,6 +25,12 @@ const statements = {
         WHERE project_uid = ?
         LIMIT 1
     `),
+    listLogsByProject: db.prepare(`
+        SELECT * FROM project_logs
+        WHERE project_uid = ?
+        ORDER BY created_at DESC
+        LIMIT ?
+    `),
     listByGuild: db.prepare(`
         SELECT * FROM projects
         WHERE guild_id = ?
@@ -87,6 +93,20 @@ async function findProjectByUid(projectUid) {
     return statements.findByUid.get(projectUid) || null;
 }
 
+async function listProjectLogs(projectUid, limit = 30) {
+    const rows = statements.listLogsByProject.all(projectUid, limit);
+    return rows.map(row => ({
+        ...row,
+        content: (() => {
+            try {
+                return JSON.parse(row.content);
+            } catch (_) {
+                return {};
+            }
+        })()
+    }));
+}
+
 async function listProjectsByGuild(guildId) {
     return statements.listByGuild.all(guildId);
 }
@@ -123,6 +143,7 @@ module.exports = {
     updateProjectThreadId,
     findProjectByName,
     findProjectByUid,
+    listProjectLogs,
     listProjectsByGuild,
     upsertProjectMember,
     removeProjectMember,

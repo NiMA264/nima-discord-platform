@@ -32,6 +32,12 @@ async function findSprintByUid(sprintUid) {
     return rowOrNull(rows);
 }
 
+async function listSprintsByProject(projectUid, limit = 20) {
+    if (useFallback()) return sqliteAdapter.listSprintsByProject(projectUid, limit);
+    const prisma = getPrisma();
+    return prisma.$queryRaw`SELECT * FROM sprints WHERE project_uid = ${projectUid} ORDER BY started_at DESC LIMIT ${limit}`;
+}
+
 async function closeSprint(sprintUid, closedBy) {
     if (useFallback()) return sqliteAdapter.closeSprint(sprintUid, closedBy);
     const prisma = getPrisma();
@@ -44,5 +50,6 @@ async function closeSprint(sprintUid, closedBy) {
 module.exports = {
     createSprintEntity,
     findSprintByUid,
+    listSprintsByProject,
     closeSprint
 };

@@ -13,6 +13,7 @@ const {
 const { findProjectByName } = require('../repositories/projectRepository');
 const { requireProjectRole } = require('../permissions/requireProjectRole');
 const { ProjectRole, isValidProjectRole } = require('../domain/projectRole');
+const { getProjectActivityFeed } = require('../services/projectActivityFeedService');
 
 function projectTemplate(projectUid, name, description, stack, status, type) {
     return [
@@ -73,6 +74,13 @@ module.exports = {
                 .setDescription('Add log entry to a project')
                 .addStringOption(opt => opt.setName('project_name').setDescription('Project name').setRequired(true))
                 .addStringOption(opt => opt.setName('entry').setDescription('Log entry').setRequired(true))
+        )
+        .addSubcommand(sub =>
+            sub
+                .setName('feed')
+                .setDescription('Show project activity feed')
+                .addStringOption(opt => opt.setName('project_id').setDescription('Project UID').setRequired(true))
+                .addIntegerOption(opt => opt.setName('limit').setDescription('Feed entries').setRequired(false))
         )
         .addSubcommandGroup(group =>
             group
@@ -191,6 +199,33 @@ module.exports = {
             if (!archived) return safeReply(interaction, { content: 'Project not found.', flags: 64 });
 
             return safeReply(interaction, { content: `Project archived: ${archived.name} (${projectId})`, flags: 64 });
+        }
+
+        if (sub === 'feed') {
+            const projectId = interaction.options.getString('project_id', true);
+            const limit = interaction.options.getInteger('limit') || 20;
+            const permission = await requireProjectRole({
+                interaction,
+                projectId,
+                allowed: [ProjectRole.PROJECT_LEAD, ProjectRole.MAINTAINER, ProjectRole.CONTRIBUTOR, ProjectRole.REVIEWER]
+            });
+            if (!permission.ok) return safeReply(interaction, { content: permission.reason, flags: 64 });
+
+            const activity = await getProjectActivityFeed(projectId, { limit });
+            if (!activity) return safeReply(interaction, { content: 'Project not found.', flags: 64 });
+
+            const lines = activity.feed.slice(0, limit).map((entry, idx) =>
+                `${idx + 1}. [${entry.source}] ${entry.type} | ${entry.summary} | ${entry.timestamp}`
+            );
+
+            const report = [
+                `Activity Feed: ${activity.project.name} (${projectId})`,
+                `logs=${activity.counts.logs} tasks=${activity.counts.tasks} sprints=${activity.counts.sprints}`,
+                '',
+                ...lines
+            ].join('\n');
+
+            return safeReply(interaction, { content: `\`\`\`txt\n${report}\n\`\`\``, flags: 64 });
         }
 
         if (sub === 'repair') {

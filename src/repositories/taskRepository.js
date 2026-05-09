@@ -32,6 +32,12 @@ async function findTaskByUid(taskUid) {
     return rowOrNull(rows);
 }
 
+async function listTasksByProject(projectUid, limit = 50) {
+    if (useFallback()) return sqliteAdapter.listTasksByProject(projectUid, limit);
+    const prisma = getPrisma();
+    return prisma.$queryRaw`SELECT * FROM tasks WHERE project_uid = ${projectUid} ORDER BY created_at DESC LIMIT ${limit}`;
+}
+
 async function assignTask(taskUid, assignedTo) {
     if (useFallback()) return sqliteAdapter.assignTask(taskUid, assignedTo);
     const prisma = getPrisma();
@@ -48,6 +54,7 @@ module.exports = {
     createTask,
     createTaskEntity,
     findTaskByUid,
+    listTasksByProject,
     assignTask,
     closeTask
 };

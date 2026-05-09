@@ -8,6 +8,8 @@ const { initializeDatabase } = require('./database/database');
 const { ensurePhase1Persistence } = require('./database/phase1PersistenceMigration');
 const { validateEnv } = require('./utils/envValidator');
 const { info, error: logError, formatError, dbInfo } = require('./utils/logger');
+const { startGithubWebhookServer } = require('./integrations/github/githubWebhookServer');
+const { startGithubEventWorker } = require('./workers/githubEventWorker');
 
 const client = new Client({
     intents: [
@@ -74,6 +76,8 @@ function initializePersistenceLayer() {
     initializeDatabase();
     ensurePhase1Persistence();
     dbInfo('Persistence layer ready');
+    startGithubEventWorker();
+    startGithubWebhookServer();
 }
 
 async function bootstrap() {

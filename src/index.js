@@ -10,6 +10,11 @@ const { assertEnvironment } = require('./config/env');
 const { info, error: logError, formatError, dbInfo } = require('./utils/logger');
 const { startGithubWebhookServer } = require('./integrations/github/githubWebhookServer');
 const { startGithubEventWorker } = require('./workers/githubEventWorker');
+const { registerNotificationAdapter } = require('./services/notificationService');
+const {
+    createDiscordNotificationAdapter,
+    setDiscordNotificationClient
+} = require('./integrations/notifications/discordNotificationDeliveryAdapter');
 
 const client = new Client({
     intents: [
@@ -77,10 +82,17 @@ function initializePersistenceLayer() {
     startGithubWebhookServer();
 }
 
+function initializeNotificationLayer() {
+    setDiscordNotificationClient(client);
+    registerNotificationAdapter(createDiscordNotificationAdapter());
+    info('Notification layer ready');
+}
+
 async function bootstrap() {
     registerGlobalErrorHandlers();
     validateStartupEnv();
     initializePersistenceLayer();
+    initializeNotificationLayer();
 
     info('Starting NiMa Discord bot', {
         guildId: config.guildId,

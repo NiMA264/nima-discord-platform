@@ -32,18 +32,28 @@ function deterministicSummary(context) {
     ].join('\n');
 }
 
-async function aiSummary(context) {
+function deterministicChangelog(context) {
+    const lines = context.entries.slice(0, 15).map(entry =>
+        `- ${entry.timestamp} | ${entry.type} | ${entry.summary}`
+    );
+
+    return [
+        `Changelog: ${context.projectName} (${context.projectId})`,
+        ...(lines.length ? lines : ['- no recent changes'])
+    ].join('\n');
+}
+
+async function aiSummary(context, mode = 'summary') {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
         return { usedAi: false, text: deterministicSummary(context) };
     }
 
     const client = new OpenAI({ apiKey });
-    const prompt = [
-        'Summarize this project activity in concise engineering language.',
-        'Use only the provided normalized context.',
-        JSON.stringify(context)
-    ].join('\n\n');
+    const instruction = mode === 'changelog'
+        ? 'Create a concise markdown changelog from this project activity.'
+        : 'Summarize this project activity in concise engineering language.';
+    const prompt = [instruction, 'Use only the provided normalized context.', JSON.stringify(context)].join('\n\n');
 
     try {
         const response = await client.responses.create({
@@ -53,12 +63,12 @@ async function aiSummary(context) {
 
         const text = String(response.output_text || '').trim();
         if (!text) {
-            return { usedAi: false, text: deterministicSummary(context) };
+            return { usedAi: false, text: mode === 'changelog' ? deterministicChangelog(context) : deterministicSummary(context) };
         }
 
         return { usedAi: true, text };
     } catch (_) {
-        return { usedAi: false, text: deterministicSummary(context) };
+        return { usedAi: false, text: mode === 'changelog' ? deterministicChangelog(context) : deterministicSummary(context) };
     }
 }
 
@@ -67,7 +77,21 @@ async function summarizeProject(projectId, options = {}) {
     if (!activity) return null;
 
     const context = buildNormalizedContext(activity, options.contextLimit || 25);
-    const result = await aiSummary(context);
+    const result = await aiSummary(context, 'summary');
+
+    return {
+        project: activity.project,
+        context,
+        ...result
+    };
+}
+
+async function changelogProject(projectId, options = {}) {
+    const activity = await getProjectActivityFeed(projectId, { limit: options.limit || 40 });
+    if (!activity) return null;
+
+    const context = buildNormalizedContext(activity, options.contextLimit || 35);
+    const result = await aiSummary(context, 'changelog');
 
     return {
         project: activity.project,
@@ -78,6 +102,8 @@ async function summarizeProject(projectId, options = {}) {
 
 module.exports = {
     summarizeProject,
+    changelogProject,
     deterministicSummary,
+    deterministicChangelog,
     buildNormalizedContext
 };

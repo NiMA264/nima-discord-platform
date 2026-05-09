@@ -4,18 +4,19 @@ const { info, error } = require('../utils/logger');
 
 let timer;
 
-function processGithubEventsBatch(limit = 20) {
+async function processGithubEventsBatch(limit = 20) {
     const events = claimQueuedEvents(limit);
 
     for (const event of events) {
         try {
             const parsedPayload = JSON.parse(event.payload);
-            if (event.project_uid) {
-                createProjectLog({
-                    projectUid: event.project_uid,
+            const activity = parsedPayload?.activity;
+            if (activity?.projectId) {
+                await createProjectLog({
+                    projectUid: activity.projectId,
                     source: 'GITHUB',
-                    eventType: `github.${event.event_name}`,
-                    content: parsedPayload
+                    eventType: `github.${activity.type}`,
+                    content: activity
                 });
             }
 
@@ -32,8 +33,8 @@ function startGithubEventWorker() {
     if (timer) return;
 
     const intervalMs = Number(process.env.GITHUB_WORKER_INTERVAL_MS || 3000);
-    timer = setInterval(() => {
-        const count = processGithubEventsBatch(20);
+    timer = setInterval(async () => {
+        const count = await processGithubEventsBatch(20);
         if (count > 0) {
             info('GitHub webhook events processed', { count });
         }

@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { enqueueGithubEvent } = require('./githubEventQueue');
+const { normalizeGithubEvent } = require('./normalizeGithubEvent');
 
 function validateGithubSignature(secret, rawBody, signatureHeader) {
     if (!secret) return true;
@@ -31,15 +32,20 @@ function ingestGithubWebhook({ headers, rawBody, body }) {
     }
 
     const deliveryId = headers['x-github-delivery'];
-    const guildId = body?.guildId || null;
-    const projectUid = body?.projectId || body?.projectUid || null;
+    const activity = normalizeGithubEvent(eventName, body);
+    if (!activity?.projectId) {
+        return { ok: false, statusCode: 400, message: 'Missing project ID in event payload' };
+    }
 
     enqueueGithubEvent({
-        guildId,
-        projectUid,
+        guildId: body?.guildId || null,
+        projectUid: activity.projectId,
         eventName,
         deliveryId,
-        payload: body
+        payload: {
+            activity,
+            raw: body
+        }
     });
 
     return { ok: true, statusCode: 202, message: 'Event queued' };

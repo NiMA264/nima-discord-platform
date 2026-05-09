@@ -1,4 +1,4 @@
-﻿require('dotenv').config();
+require('dotenv').config();
 
 const { Client, GatewayIntentBits, Partials } = require('discord.js');
 const fs = require('fs');
@@ -6,7 +6,7 @@ const path = require('path');
 const config = require('./config');
 const { initializeDatabase } = require('./database/database');
 const { ensurePhase1Persistence } = require('./database/phase1PersistenceMigration');
-const { validateEnv } = require('./utils/envValidator');
+const { assertEnvironment } = require('./config/env');
 const { info, error: logError, formatError, dbInfo } = require('./utils/logger');
 const { startGithubWebhookServer } = require('./integrations/github/githubWebhookServer');
 const { startGithubEventWorker } = require('./workers/githubEventWorker');
@@ -66,10 +66,7 @@ function loadEvents() {
 }
 
 function validateStartupEnv() {
-    const result = validateEnv(process.env);
-    if (!result.ok) {
-        process.exit(1);
-    }
+    assertEnvironment(process.env);
 }
 
 function initializePersistenceLayer() {

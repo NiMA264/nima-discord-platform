@@ -1,6 +1,7 @@
 const { runProjectReconciliation } = require('../reconciliation/projectReconciliation');
 const { info } = require('../utils/logger');
 const { handleWorkerError } = require('../lib/handleWorkerError');
+const metrics = require('../lib/metrics');
 
 let timer;
 
@@ -12,6 +13,7 @@ async function reconcileGuild(guild) {
         issueCount: report.issueCount,
         issueSummary: report.issueSummary
     });
+    metrics.increment('worker_processed_total', 1, { worker: 'projectReconciliationWorker' });
     return report;
 }
 
@@ -24,6 +26,7 @@ function startProjectReconciliationWorker(client) {
             try {
                 await reconcileGuild(guild);
             } catch (err) {
+                metrics.increment('worker_failure_total', 1, { worker: 'projectReconciliationWorker' });
                 handleWorkerError('projectReconciliationWorker', err, { guildId: guild.id });
             }
         }

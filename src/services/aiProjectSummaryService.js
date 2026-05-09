@@ -1,5 +1,7 @@
+const crypto = require('crypto');
 const { OpenAI } = require('openai');
 const { getProjectActivityFeed } = require('./projectActivityFeedService');
+const metrics = require('../lib/metrics');
 
 function buildNormalizedContext(activity, limit = 25) {
     const entries = activity.feed.slice(0, limit).map(entry => ({
@@ -46,7 +48,7 @@ function deterministicChangelog(context) {
 async function aiSummary(context, mode = 'summary') {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-        return { usedAi: false, text: deterministicSummary(context) };
+        return { usedAi: false, text: mode === 'changelog' ? deterministicChangelog(context) : deterministicSummary(context) };
     }
 
     const client = new OpenAI({ apiKey });
@@ -56,18 +58,22 @@ async function aiSummary(context, mode = 'summary') {
     const prompt = [instruction, 'Use only the provided normalized context.', JSON.stringify(context)].join('\n\n');
 
     try {
+        const timer = metrics.startTimer('ai_latency_ms', { operation: mode });
         const response = await client.responses.create({
             model: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
             input: prompt
         });
+        timer.stop({ status: 'success' });
 
         const text = String(response.output_text || '').trim();
         if (!text) {
             return { usedAi: false, text: mode === 'changelog' ? deterministicChangelog(context) : deterministicSummary(context) };
         }
 
+        metrics.increment('ai_requests_total', 1, { operation: mode, status: 'success' });
         return { usedAi: true, text };
     } catch (_) {
+        metrics.increment('ai_requests_total', 1, { operation: mode, status: 'failed' });
         return { usedAi: false, text: mode === 'changelog' ? deterministicChangelog(context) : deterministicSummary(context) };
     }
 }

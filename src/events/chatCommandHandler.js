@@ -9,6 +9,7 @@ const taskCommand = require('../commands/task');
 const sprintCommand = require('../commands/sprint');
 const aiCommand = require('../commands/ai');
 const { handleCommandError } = require('../lib/handleCommandError');
+const metrics = require('../lib/metrics');
 
 const commandMap = {
     setup: setupCommand,
@@ -27,10 +28,15 @@ async function handleChatInputCommand(interaction, config) {
     const handler = commandMap[interaction.commandName];
     if (!handler) return false;
 
+    const timer = metrics.startTimer('command_execution', { command: interaction.commandName });
     try {
         await handler.execute(interaction, config);
+        metrics.increment('command_success_total', 1, { command: interaction.commandName });
+        timer.stop({ status: 'success' });
         return true;
     } catch (err) {
+        metrics.increment('command_failure_total', 1, { command: interaction.commandName });
+        timer.stop({ status: 'failure' });
         await handleCommandError(interaction, err, `Fehler beim Ausführen von /${interaction.commandName}.`);
         return true;
     }

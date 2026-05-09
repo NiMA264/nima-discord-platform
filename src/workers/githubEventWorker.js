@@ -3,6 +3,7 @@ const dbQueueAdapter = require('../queues/dbQueueAdapter');
 const { QueueService } = require('../services/queueService');
 const { info } = require('../utils/logger');
 const { handleWorkerError } = require('../lib/handleWorkerError');
+const metrics = require('../lib/metrics');
 
 const queueService = new QueueService(dbQueueAdapter);
 
@@ -10,6 +11,7 @@ let timer;
 
 async function processGithubEventsBatch(limit = 20) {
     const events = await queueService.dequeue('github_events', limit);
+    metrics.gauge('queue_depth_estimate', events.length, { queue: 'github_events' });
 
     for (const event of events) {
         try {
@@ -24,8 +26,10 @@ async function processGithubEventsBatch(limit = 20) {
             }
 
             await queueService.ack('github_events', event.id);
+            metrics.increment('worker_processed_total', 1, { worker: 'githubEventWorker' });
         } catch (err) {
             await queueService.fail('github_events', event.id, err.message);
+            metrics.increment('worker_failure_total', 1, { worker: 'githubEventWorker' });
             handleWorkerError('githubEventWorker', err, { eventId: event.id });
         }
     }
@@ -39,6 +43,7 @@ function startGithubEventWorker() {
     const intervalMs = Number(process.env.GITHUB_WORKER_INTERVAL_MS || 3000);
     timer = setInterval(async () => {
         const count = await processGithubEventsBatch(20);
+        metrics.increment('worker_batch_total', 1, { worker: 'githubEventWorker' });
         if (count > 0) {
             info('GitHub webhook events processed', { count });
         }

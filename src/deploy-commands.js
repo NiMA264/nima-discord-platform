@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const { REST, Routes } = require('discord.js');
 const { validateEnv } = require('./utils/envValidator');
+const { scoped } = require('./utils/logger');
 const setupCommand = require('./commands/setup');
 const moderationCommand = require('./commands/moderation');
 const askCommand = require('./commands/ask');
@@ -12,6 +13,8 @@ const projectCommand = require('./commands/project');
 const taskCommand = require('./commands/task');
 const sprintCommand = require('./commands/sprint');
 const aiCommand = require('./commands/ai');
+
+const deployLog = scoped('DEPLOY');
 
 function validateDeployEnv() {
     const result = validateEnv(process.env);
@@ -41,19 +44,18 @@ async function deploy() {
     ];
     const rest = new REST({ version: '10' }).setToken(token);
 
-    console.log('[DEPLOY] Starting command deployment...');
-    console.log(`[DEPLOY] Guild: ${guildId}`);
-    console.log('[DEPLOY] Replacing existing guild commands with: /setup, /moderation, /ask, /thread-summary, /knowledge, /dev, /project, /task, /sprint, /ai');
+    deployLog.info('Starting command deployment');
+    deployLog.info('Deploy target', { guildId });
 
     await rest.put(
         Routes.applicationGuildCommands(clientId, guildId),
         { body: commands }
     );
 
-    console.log('[DEPLOY] Command deployment finished successfully.');
+    deployLog.info('Command deployment finished successfully');
 }
 
 deploy().catch(err => {
-    console.error('[DEPLOY ERROR]', err.message);
+    deployLog.error('Deployment failed', { error: err?.message || String(err) });
     process.exit(1);
 });

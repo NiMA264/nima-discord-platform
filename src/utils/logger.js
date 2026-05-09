@@ -1,54 +1,31 @@
-﻿const { DiscordAPIError } = require('discord.js');
-
-function formatContext(context = {}) {
-    const parts = Object.entries(context)
-        .filter(([, value]) => value !== undefined && value !== null && value !== '')
-        .map(([key, value]) => `${key}=${String(value)}`);
-
-    return parts.length ? ` | ${parts.join(' ')}` : '';
-}
-
-function log(level, message, context) {
-    const ts = new Date().toISOString();
-    const line = `[${ts}] [${level}] ${message}${formatContext(context)}`;
-
-    if (level === 'ERROR') {
-        console.error(line);
-        return;
-    }
-
-    if (level === 'WARN') {
-        console.warn(line);
-        return;
-    }
-
-    console.log(line);
-}
+const { DiscordAPIError } = require('discord.js');
+const { logger } = require('../lib/logger');
 
 function scoped(scope) {
+    const scopedLogger = logger.child({ scope });
     return {
         info(message, context) {
-            log('INFO', `[${scope}] ${message}`, context);
+            scopedLogger.info(message, context);
         },
         warn(message, context) {
-            log('WARN', `[${scope}] ${message}`, context);
+            scopedLogger.warn(message, context);
         },
         error(message, context) {
-            log('ERROR', `[${scope}] ${message}`, context);
+            scopedLogger.error(message, context);
         }
     };
 }
 
 function info(message, context) {
-    log('INFO', message, context);
+    logger.info(message, context);
 }
 
 function warn(message, context) {
-    log('WARN', message, context);
+    logger.warn(message, context);
 }
 
 function error(message, context) {
-    log('ERROR', message, context);
+    logger.error(message, context);
 }
 
 function formatError(err) {

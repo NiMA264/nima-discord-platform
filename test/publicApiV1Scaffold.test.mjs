@@ -3,6 +3,7 @@ import authModule from '../src/api/v1/middleware/auth.js';
 import projectsRoute from '../src/api/v1/routes/projects.js';
 import tasksRoute from '../src/api/v1/routes/tasks.js';
 import activityRoute from '../src/api/v1/routes/activity.js';
+import workspacesRoute from '../src/api/v1/routes/workspaces.js';
 
 const { authenticateApiRequest } = authModule;
 
@@ -41,5 +42,17 @@ describe('public api v1 scaffold', () => {
             expect(response.body).toHaveProperty('meta.authMode', 'disabled');
         }
     });
-});
 
+    it('workspaces routes expose list/create/detail response shapes', () => {
+        const context = { authMode: 'disabled' };
+        const listResponse = workspacesRoute.getWorkspaces({}, {}, context);
+        const createResponse = workspacesRoute.postWorkspaces({}, { name: `API WS ${Date.now()}` }, context);
+        const detailResponse = workspacesRoute.getWorkspaceById({ params: { id: createResponse.body.data.workspaceId } }, {}, context);
+
+        expect(listResponse.statusCode).toBe(200);
+        expect(createResponse.statusCode).toBe(201);
+        expect(detailResponse.statusCode).toBe(200);
+        expect(createResponse.body).toHaveProperty('meta.resource', 'workspaces');
+        expect(detailResponse.body).toHaveProperty('meta.version', 'v1');
+    });
+});

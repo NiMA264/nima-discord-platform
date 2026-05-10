@@ -6,6 +6,66 @@ info:
 servers:
   - url: http://localhost:8790
 paths:
+  /v1/workspaces:
+    get:
+      summary: List workspaces
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Workspace list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListResponse'
+    post:
+      summary: Create workspace
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                slug:
+                  type: string
+                ownerUserId:
+                  type: string
+      responses:
+        '201':
+          description: Workspace created
+          content:
+            application/json:
+              schema:
+                type: object
+  /v1/workspaces/{id}:
+    get:
+      summary: Get workspace by id
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Workspace detail
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: Workspace not found
+          content:
+            application/json:
+              schema:
+                type: object
   /v1/projects:
     get:
       summary: List projects (placeholder)
@@ -139,4 +199,3 @@ components:
         meta:
           $ref: '#/components/schemas/Meta'
       required: [ok, data, meta]
-

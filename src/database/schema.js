@@ -84,6 +84,22 @@
         UNIQUE(guild_id, discord_role_id)
     );`,
     `CREATE INDEX IF NOT EXISTS idx_role_bindings_lookup ON role_bindings (guild_id, project_role);`,
+    `CREATE TABLE IF NOT EXISTS workspaces (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        workspace_id TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL,
+        slug TEXT NOT NULL UNIQUE,
+        created_at TEXT NOT NULL
+    );`,
+    `CREATE TABLE IF NOT EXISTS workspace_memberships (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        workspace_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        role TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        UNIQUE(workspace_id, user_id)
+    );`,
+    `CREATE INDEX IF NOT EXISTS idx_workspace_memberships_workspace ON workspace_memberships (workspace_id, role);`,
     `CREATE TABLE IF NOT EXISTS github_webhook_events (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         guild_id TEXT,

@@ -5,6 +5,7 @@ const { authenticateApiRequest } = require('./middleware/auth');
 const projectsRoute = require('./routes/projects');
 const tasksRoute = require('./routes/tasks');
 const activityRoute = require('./routes/activity');
+const workspacesRoute = require('./routes/workspaces');
 
 function sendJson(res, statusCode, payload) {
     res.statusCode = statusCode;
@@ -21,12 +22,18 @@ async function readJsonBody(req) {
 }
 
 function resolveHandler(method, pathname) {
-    if (pathname === '/v1/projects' && method === 'GET') return projectsRoute.getProjects;
-    if (pathname === '/v1/projects' && method === 'POST') return projectsRoute.postProjects;
-    if (pathname === '/v1/tasks' && method === 'GET') return tasksRoute.getTasks;
-    if (pathname === '/v1/tasks' && method === 'POST') return tasksRoute.postTasks;
-    if (pathname === '/v1/activity' && method === 'GET') return activityRoute.getActivity;
-    if (pathname === '/v1/activity' && method === 'POST') return activityRoute.postActivity;
+    if (pathname === '/v1/workspaces' && method === 'GET') return { handler: workspacesRoute.getWorkspaces, params: {} };
+    if (pathname === '/v1/workspaces' && method === 'POST') return { handler: workspacesRoute.postWorkspaces, params: {} };
+    if (pathname.startsWith('/v1/workspaces/') && method === 'GET') {
+        const id = pathname.split('/')[3] || '';
+        return { handler: workspacesRoute.getWorkspaceById, params: { id } };
+    }
+    if (pathname === '/v1/projects' && method === 'GET') return { handler: projectsRoute.getProjects, params: {} };
+    if (pathname === '/v1/projects' && method === 'POST') return { handler: projectsRoute.postProjects, params: {} };
+    if (pathname === '/v1/tasks' && method === 'GET') return { handler: tasksRoute.getTasks, params: {} };
+    if (pathname === '/v1/tasks' && method === 'POST') return { handler: tasksRoute.postTasks, params: {} };
+    if (pathname === '/v1/activity' && method === 'GET') return { handler: activityRoute.getActivity, params: {} };
+    if (pathname === '/v1/activity' && method === 'POST') return { handler: activityRoute.postActivity, params: {} };
     return null;
 }
 
@@ -37,8 +44,8 @@ function startPublicApiServer() {
     const port = Number(process.env.PUBLIC_API_PORT || 8790);
     const server = http.createServer(async (req, res) => {
         const requestUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-        const handler = resolveHandler(req.method, requestUrl.pathname);
-        if (!handler) {
+        const resolved = resolveHandler(req.method, requestUrl.pathname);
+        if (!resolved) {
             sendJson(res, 404, { ok: false, error: { code: 'NOT_FOUND', message: 'Route not found' } });
             return;
         }
@@ -51,7 +58,8 @@ function startPublicApiServer() {
 
         try {
             const body = req.method === 'POST' ? await readJsonBody(req) : {};
-            const result = handler(req, body, auth.context);
+            const requestWithParams = { ...req, params: resolved.params || {} };
+            const result = resolved.handler(requestWithParams, body, auth.context);
             sendJson(res, result.statusCode || 200, result.body || { ok: true });
         } catch (err) {
             sendJson(res, 400, {
@@ -69,4 +77,3 @@ function startPublicApiServer() {
 module.exports = {
     startPublicApiServer
 };
-

@@ -41,17 +41,17 @@ module.exports = {
                 )
                 .addChannelOption(option =>
                     option
-                        .setName('help_channel')
-                        .setDescription('Help/guide channel')
-                        .addChannelTypes(ChannelType.GuildText)
-                        .setRequired(false)
-                )
-                .addChannelOption(option =>
-                    option
                         .setName('project_forum_channel')
                         .setDescription('Project forum channel')
                         .addChannelTypes(ChannelType.GuildForum)
                         .setRequired(true)
+                )
+                .addChannelOption(option =>
+                    option
+                        .setName('help_channel')
+                        .setDescription('Help/guide channel')
+                        .addChannelTypes(ChannelType.GuildText)
+                        .setRequired(false)
                 )
                 .addChannelOption(option =>
                     option

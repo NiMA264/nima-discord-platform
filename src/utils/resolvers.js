@@ -1,21 +1,8 @@
-﻿const { ChannelType } = require('discord.js');
+const { ChannelType } = require('discord.js');
 const { scoped } = require('./logger');
+const { normalizeDiscordChannelName, channelNameMatches } = require('../lib/discordChannelName');
 
 const resolverLog = scoped('RESOLVER');
-
-function toCanonical(value) {
-    return String(value || '')
-        .toLowerCase()
-        .replace(/ß/g, 'ss')
-        .replace(/[ä]/g, 'a')
-        .replace(/[ö]/g, 'o')
-        .replace(/[ü]/g, 'u')
-        .normalize('NFKD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9-]+/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '');
-}
 
 function expandGermanVariants(value) {
     const base = String(value || '').toLowerCase().replace(/ß/g, 'ss');
@@ -29,7 +16,7 @@ function expandGermanVariants(value) {
     pushVariant(base.replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue'));
     pushVariant(base.replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/ü/g, 'u'));
 
-    return Array.from(variants).map(toCanonical);
+    return Array.from(variants).map(normalizeDiscordChannelName);
 }
 
 function getNameVariants(value) {
@@ -39,7 +26,7 @@ function getNameVariants(value) {
 function resolveByName(collection, expectedName) {
     if (!expectedName) return null;
 
-    const exact = collection.find(item => item.name === expectedName);
+    const exact = collection.find(item => item.name === expectedName || channelNameMatches(item.name, expectedName));
     if (exact) return exact;
 
     const expectedVariants = getNameVariants(expectedName);

@@ -23,6 +23,7 @@ const { hasModerationPermission, hasManageGuildPermission } = require('../utils/
 const { logModerationEvent } = require('./logSystem');
 const { truncateText } = require('../utils/message');
 const { parseKnowledgeId, formatKnowledgeId, createKnowledgeExcerpt, formatIsoTimestamp } = require('../utils/knowledgeFormatting');
+const { normalizeDiscordChannelName } = require('../lib/discordChannelName');
 const { aiWarn, aiError, formatError } = require('../utils/logger');
 
 const MIN_CONTENT_LENGTH = 40;
@@ -43,7 +44,7 @@ function buildRelevantChannelSet(config) {
         c.backend,
         c.discordBots,
         c.projectLogs
-    ].filter(Boolean));
+    ].filter(Boolean).map(normalizeDiscordChannelName));
 }
 
 function getThreadIdFromMessage(message) {
@@ -65,7 +66,7 @@ function shouldIngestMessage(message, config) {
     if (!hasCodingSignal(message.content) && message.content.trim().length < 90) return { ok: false, reason: 'low-signal-non-technical' };
 
     const relevantChannels = buildRelevantChannelSet(config);
-    if (!relevantChannels.has(message.channel?.name)) return { ok: false, reason: 'irrelevant-channel' };
+    if (!relevantChannels.has(normalizeDiscordChannelName(message.channel?.name))) return { ok: false, reason: 'irrelevant-channel' };
 
     return { ok: true, reason: 'accepted' };
 }

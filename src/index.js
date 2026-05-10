@@ -11,6 +11,7 @@ const { info, error: logError, formatError, dbInfo } = require('./utils/logger')
 const { startGithubWebhookServer } = require('./integrations/github/githubWebhookServer');
 const { startGithubEventWorker } = require('./workers/githubEventWorker');
 const { startScheduledDigestWorker } = require('./workers/digestWorker');
+const { startInactivityDetectionWorker } = require('./workers/inactivityDetectionWorker');
 const { registerNotificationAdapter } = require('./services/notificationService');
 const {
     createDiscordNotificationAdapter,
@@ -91,6 +92,7 @@ function initializeNotificationLayer() {
 
 function initializeAutomationLayer() {
     startScheduledDigestWorker(client);
+    startInactivityDetectionWorker(client);
     info('Automation layer ready');
 }
 

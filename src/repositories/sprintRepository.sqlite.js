@@ -7,7 +7,7 @@ const db = getDatabase();
 const statements = {
     createSprint: db.prepare(`
         INSERT INTO sprints (sprint_uid, project_uid, title, status, started_by, started_at)
-        VALUES (?, ?, ?, 'ACTIVE', ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?)
     `),
     findByUid: db.prepare(`
         SELECT * FROM sprints WHERE sprint_uid = ? LIMIT 1
@@ -25,6 +25,7 @@ async function createSprint(data) {
         data.sprintUid,
         data.projectUid,
         data.title,
+        data.status || 'ACTIVE',
         data.startedBy,
         data.startedAt || new Date().toISOString()
     );

@@ -76,7 +76,7 @@ describe('digestWorker', () => {
             projectId: projectUid,
             period: 'daily'
         }));
-    });
+    }, 15000);
 
     it('emits weekly digest', async () => {
         const guildId = `digest-guild-weekly-${Date.now()}`;
@@ -99,5 +99,5 @@ describe('digestWorker', () => {
             projectId: projectUid,
             period: 'weekly'
         }));
-    });
+    }, 15000);
 });

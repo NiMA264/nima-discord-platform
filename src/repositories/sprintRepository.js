@@ -10,17 +10,17 @@ function rowOrNull(rows) {
     return rows.length ? rows[0] : null;
 }
 
-async function createSprintEntity({ projectUid, title, startedBy }) {
+async function createSprintEntity({ projectUid, title, startedBy, startedAt, status }) {
     const sprintUid = crypto.randomUUID();
     if (useFallback()) {
-        await sqliteAdapter.createSprint({ sprintUid, projectUid, title, startedBy });
+        await sqliteAdapter.createSprint({ sprintUid, projectUid, title, startedBy, startedAt, status });
         return sprintUid;
     }
 
     const prisma = getPrisma();
     await prisma.$executeRaw`
         INSERT INTO sprints (sprint_uid, project_uid, title, status, started_by, started_at)
-        VALUES (${sprintUid}, ${projectUid}, ${title}, 'ACTIVE', ${startedBy}, ${new Date().toISOString()})
+        VALUES (${sprintUid}, ${projectUid}, ${title}, ${status || 'ACTIVE'}, ${startedBy}, ${startedAt || new Date().toISOString()})
     `;
     return sprintUid;
 }

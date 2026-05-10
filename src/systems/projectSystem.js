@@ -6,6 +6,7 @@ const { safeReply } = require('../utils/discord');
 const { findForumChannel, findTextChannel } = require('../utils/resolvers');
 const { findProjectByName } = require('../repositories/projectRepository');
 const { createProject, setDiscordThread, addProjectLog } = require('../services/projectService');
+const { getGuildChannelConfig } = require('../services/guildChannelConfigService');
 const { requireProjectRole } = require('../permissions/requireProjectRole');
 const { ProjectRole } = require('../domain/projectRole');
 
@@ -37,7 +38,8 @@ function projectTemplate(projectUid, name, description, stack, status, type) {
 }
 
 async function postProjectPanel(guild, config) {
-    const channel = findTextChannel(guild, config.channels.channels.projectLogs);
+    const settings = getGuildChannelConfig(guild.id);
+    const channel = findTextChannel(guild, config.channels.channels.projectLogs, settings.botChannelId);
     if (!channel) return;
 
     await channel.send({
@@ -61,7 +63,8 @@ async function createProjectFromModal(interaction, config) {
     const type = interaction.fields.getTextInputValue('project_type');
     const stack = interaction.fields.getTextInputValue('project_stack');
 
-    const forum = findForumChannel(interaction.guild, config.channels.channels.projectsForum);
+    const settings = getGuildChannelConfig(interaction.guild.id);
+    const forum = findForumChannel(interaction.guild, config.channels.channels.projectsForum, settings.projectForumChannelId);
 
     if (!forum) {
         return safeReply(interaction, { content: 'Projects forum not found.', flags: 64 });
@@ -93,7 +96,8 @@ async function addProjectLogFromModal(interaction, config) {
     const projectName = interaction.fields.getTextInputValue('project_name_for_log');
     const entry = interaction.fields.getTextInputValue('project_log_entry');
 
-    const forum = findForumChannel(interaction.guild, config.channels.channels.projectsForum);
+    const settings = getGuildChannelConfig(interaction.guild.id);
+    const forum = findForumChannel(interaction.guild, config.channels.channels.projectsForum, settings.projectForumChannelId);
 
     if (!forum) {
         return safeReply(interaction, { content: 'Projects forum not found.', flags: 64 });

@@ -3,9 +3,11 @@ const { createEmbed } = require('../utils/embed');
 const { createWelcomeButtonRow } = require('../components/buttons/welcomeButtons');
 const { findTextChannel } = require('../utils/resolvers');
 const { resolveAssetPath } = require('./assets');
+const { getGuildChannelConfig } = require('../services/guildChannelConfigService');
 
 async function postWelcomePanel(guild, config) {
-    const channel = findTextChannel(guild, config.channels.channels.welcome);
+    const settings = getGuildChannelConfig(guild.id);
+    const channel = findTextChannel(guild, config.channels.channels.welcome, settings.welcomeChannelId);
     if (!channel) return null;
 
     const welcomePath = resolveAssetPath('welcome.png');
@@ -22,7 +24,8 @@ async function postWelcomePanel(guild, config) {
 }
 
 async function sendMemberWelcome(member, config) {
-    const channel = findTextChannel(member.guild, config.channels.channels.welcome);
+    const settings = getGuildChannelConfig(member.guild.id);
+    const channel = findTextChannel(member.guild, config.channels.channels.welcome, settings.welcomeChannelId);
     if (!channel) return;
 
     const welcomePath = resolveAssetPath('welcome.png');

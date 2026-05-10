@@ -23,7 +23,12 @@ const statements = [
     `CREATE TABLE IF NOT EXISTS guild_settings (
         guild_id TEXT PRIMARY KEY,
         dashboard_enabled INTEGER NOT NULL DEFAULT 1,
-        github_enabled INTEGER NOT NULL DEFAULT 0
+        github_enabled INTEGER NOT NULL DEFAULT 0,
+        welcome_channel_id TEXT,
+        bot_channel_id TEXT,
+        project_forum_channel_id TEXT,
+        knowledge_channel_id TEXT,
+        setup_category_id TEXT
     );`,
     `CREATE TABLE IF NOT EXISTS role_bindings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -90,6 +95,11 @@ function ensurePhase1Persistence() {
     ensureColumn(db, 'projects', 'repo_url', 'repo_url TEXT');
     ensureColumn(db, 'projects', 'github_repo_id', 'github_repo_id TEXT');
     ensureColumn(db, 'projects', 'forum_channel_id', 'forum_channel_id TEXT');
+    ensureColumn(db, 'guild_settings', 'welcome_channel_id', 'welcome_channel_id TEXT');
+    ensureColumn(db, 'guild_settings', 'bot_channel_id', 'bot_channel_id TEXT');
+    ensureColumn(db, 'guild_settings', 'project_forum_channel_id', 'project_forum_channel_id TEXT');
+    ensureColumn(db, 'guild_settings', 'knowledge_channel_id', 'knowledge_channel_id TEXT');
+    ensureColumn(db, 'guild_settings', 'setup_category_id', 'setup_category_id TEXT');
 
     for (const statement of statements) {
         db.prepare(statement).run();

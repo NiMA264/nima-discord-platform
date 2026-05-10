@@ -51,4 +51,14 @@ describe('resolver integration for normalized matching', () => {
         const channel = findTextChannel(guild, 'discord-bots');
         expect(channel?.id).toBe('t1');
     });
+
+    it('prefers channel id before name fallback', () => {
+        const guild = makeGuild([
+            { id: 't-legacy', name: 'welcome', type: ChannelType.GuildText },
+            { id: 't-config', name: 'some-random-name', type: ChannelType.GuildText }
+        ]);
+
+        const channel = findTextChannel(guild, 'welcome', 't-config');
+        expect(channel?.id).toBe('t-config');
+    });
 });

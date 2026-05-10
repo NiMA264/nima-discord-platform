@@ -12,6 +12,7 @@ const {
     findTicketByChannelId,
     insertTicketTranscriptMeta
 } = require('../repositories/ticketRepository');
+const { getGuildChannelConfig } = require('../services/guildChannelConfigService');
 const { ticketInfo, ticketWarn } = require('../utils/logger');
 
 function sanitizeChannelPart(value) {
@@ -65,7 +66,8 @@ async function createTicketFromModal(interaction, config) {
         ticketWarn('Closed stale open ticket row', { guildId: interaction.guild.id, channelId: openTicket.channel_id, ownerId: interaction.user.id });
     }
 
-    const category = findCategory(interaction.guild, config.channels.categories.support);
+    const settings = getGuildChannelConfig(interaction.guild.id);
+    const category = findCategory(interaction.guild, config.channels.categories.support, settings.setupCategoryId);
 
     const supportRoles = getSupportRoles(interaction.guild, config);
     const permissionOverwrites = [

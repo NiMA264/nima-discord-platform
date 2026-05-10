@@ -68,7 +68,12 @@
     `CREATE TABLE IF NOT EXISTS guild_settings (
         guild_id TEXT PRIMARY KEY,
         dashboard_enabled INTEGER NOT NULL DEFAULT 1,
-        github_enabled INTEGER NOT NULL DEFAULT 0
+        github_enabled INTEGER NOT NULL DEFAULT 0,
+        welcome_channel_id TEXT,
+        bot_channel_id TEXT,
+        project_forum_channel_id TEXT,
+        knowledge_channel_id TEXT,
+        setup_category_id TEXT
     );`,
     `CREATE TABLE IF NOT EXISTS role_bindings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

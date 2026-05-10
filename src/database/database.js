@@ -70,6 +70,11 @@ function initializeDatabase() {
         ensureColumn(dbInstance, 'knowledge_entries', 'accepted_at', 'accepted_at TEXT');
         ensureColumn(dbInstance, 'knowledge_events', 'user_id', 'user_id TEXT');
         ensureColumn(dbInstance, 'knowledge_events', 'ask_context_id', 'ask_context_id TEXT');
+        ensureColumn(dbInstance, 'guild_settings', 'welcome_channel_id', 'welcome_channel_id TEXT');
+        ensureColumn(dbInstance, 'guild_settings', 'bot_channel_id', 'bot_channel_id TEXT');
+        ensureColumn(dbInstance, 'guild_settings', 'project_forum_channel_id', 'project_forum_channel_id TEXT');
+        ensureColumn(dbInstance, 'guild_settings', 'knowledge_channel_id', 'knowledge_channel_id TEXT');
+        ensureColumn(dbInstance, 'guild_settings', 'setup_category_id', 'setup_category_id TEXT');
 
         const upsertSchemaVersion = dbInstance.prepare(`
             INSERT INTO db_meta (key, value)

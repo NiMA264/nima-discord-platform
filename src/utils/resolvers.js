@@ -43,7 +43,15 @@ function resolveByName(collection, expectedName) {
     return null;
 }
 
-function findChannelByType(guild, name, expectedType, label) {
+function findChannelByType(guild, name, expectedType, label, preferredId) {
+    if (preferredId) {
+        const byId = guild.channels.cache.get(preferredId) || null;
+        if (byId && byId.type === expectedType) {
+            resolverLog.info(`${label} resolved by id`, { guildId: guild.id, preferredId, channelId: byId.id });
+            return byId;
+        }
+    }
+
     const channel = resolveByName(guild.channels.cache, name);
     if (!channel) {
         resolverLog.warn(`${label} not found`, { guildId: guild.id, name, expectedType });
@@ -59,16 +67,16 @@ function findChannelByType(guild, name, expectedType, label) {
     return channel;
 }
 
-function findTextChannel(guild, name) {
-    return findChannelByType(guild, name, ChannelType.GuildText, 'text-channel');
+function findTextChannel(guild, name, preferredId) {
+    return findChannelByType(guild, name, ChannelType.GuildText, 'text-channel', preferredId);
 }
 
-function findForumChannel(guild, name) {
-    return findChannelByType(guild, name, ChannelType.GuildForum, 'forum-channel');
+function findForumChannel(guild, name, preferredId) {
+    return findChannelByType(guild, name, ChannelType.GuildForum, 'forum-channel', preferredId);
 }
 
-function findCategory(guild, name) {
-    return findChannelByType(guild, name, ChannelType.GuildCategory, 'category');
+function findCategory(guild, name, preferredId) {
+    return findChannelByType(guild, name, ChannelType.GuildCategory, 'category', preferredId);
 }
 
 function findRole(guild, name) {

@@ -11,6 +11,7 @@ const {
     repairProject
 } = require('../services/projectService');
 const { findProjectByName } = require('../repositories/projectRepository');
+const { getGuildChannelConfig } = require('../services/guildChannelConfigService');
 const { requireProjectRole } = require('../permissions/requireProjectRole');
 const { ProjectRole, isValidProjectRole } = require('../domain/projectRole');
 const { getProjectActivityFeed } = require('../services/projectActivityFeedService');
@@ -125,7 +126,8 @@ module.exports = {
             const type = interaction.options.getString('type', true);
             const stack = interaction.options.getString('stack') || '';
 
-            const forum = findForumChannel(interaction.guild, config.channels.channels.projectsForum);
+            const settings = getGuildChannelConfig(interaction.guild.id);
+            const forum = findForumChannel(interaction.guild, config.channels.channels.projectsForum, settings.projectForumChannelId);
             if (!forum) return safeReply(interaction, { content: 'Projects forum not found.', flags: 64 });
 
             const projectRecord = await createProject({
@@ -167,7 +169,8 @@ module.exports = {
                 return safeReply(interaction, { content: permission.reason, flags: 64 });
             }
 
-            const forum = findForumChannel(interaction.guild, config.channels.channels.projectsForum);
+            const settings = getGuildChannelConfig(interaction.guild.id);
+            const forum = findForumChannel(interaction.guild, config.channels.channels.projectsForum, settings.projectForumChannelId);
             if (!forum) return safeReply(interaction, { content: 'Projects forum not found.', flags: 64 });
 
             let thread = forum.threads.cache.find(t => t.id === project.thread_id);

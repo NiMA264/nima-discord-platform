@@ -65,6 +65,17 @@ describe('inactivityDetectionWorker', () => {
             createdAt: daysAgoIso(8)
         });
 
+        await createTask({
+            taskUid: `task-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+            projectUid,
+            title: 'Blocked In Progress Task',
+            description: 'in progress too long',
+            status: 'IN_PROGRESS',
+            assignedTo: 'u2',
+            createdBy: 'u1',
+            createdAt: daysAgoIso(9)
+        });
+
         return projectUid;
     }
 
@@ -79,13 +90,15 @@ describe('inactivityDetectionWorker', () => {
                 projectInactiveDays: 7,
                 staleSprintDays: 14,
                 unassignedTaskDays: 3,
+                blockedTaskDays: 5,
+                riskSummaryMinScore: 2,
                 signalCooldownHours: 1
             },
             now: new Date(),
             emit
         });
 
-        expect(emitted).toBe(3);
+        expect(emitted).toBe(4);
         expect(emit).toHaveBeenCalledWith('project.inactive.detected', expect.objectContaining({
             projectId: projectUid
         }));
@@ -96,6 +109,11 @@ describe('inactivityDetectionWorker', () => {
         expect(emit).toHaveBeenCalledWith('task.unassigned_open.detected', expect.objectContaining({
             projectId: projectUid,
             openCount: 1
+        }));
+        expect(emit).toHaveBeenCalledWith('ai.risk.summary.generated', expect.objectContaining({
+            projectId: projectUid,
+            severity: expect.any(String),
+            summary: expect.any(String)
         }));
     });
 
@@ -131,6 +149,8 @@ describe('inactivityDetectionWorker', () => {
                 projectInactiveDays: 7,
                 staleSprintDays: 14,
                 unassignedTaskDays: 3,
+                blockedTaskDays: 5,
+                riskSummaryMinScore: 2,
                 signalCooldownHours: 1
             },
             now: new Date(),

@@ -4,6 +4,7 @@ const { listTasksByProject } = require('../repositories/taskRepository');
 const { listSprintsByProject } = require('../repositories/sprintRepository');
 const { getProjectActivityFeed } = require('../services/projectActivityFeedService');
 const { notifyDomainEvent } = require('../services/notificationService');
+const { generateRiskSummary } = require('../services/aiRiskSummaryService');
 const { handleWorkerError } = require('../lib/handleWorkerError');
 const metrics = require('../lib/metrics');
 
@@ -44,6 +45,12 @@ function findUnassignedOpenTasks(tasks, nowTs, staleMs) {
         .filter(t => (nowTs - toTimestamp(t.created_at)) >= staleMs);
 }
 
+function findBlockedTasks(tasks, nowTs, blockedMs) {
+    return tasks
+        .filter(t => String(t.status || '').toUpperCase() === 'IN_PROGRESS')
+        .filter(t => (nowTs - toTimestamp(t.created_at)) >= blockedMs);
+}
+
 function shouldEmit(signalKey, nowTs, cooldownMs) {
     const last = signalState.get(signalKey) || 0;
     if ((nowTs - last) < cooldownMs) return false;
@@ -66,6 +73,7 @@ async function evaluateProjectSignals(project, now, config, emit) {
     const projectInactiveMs = msFromDays(config.projectInactiveDays);
     const staleSprintMs = msFromDays(config.staleSprintDays);
     const unassignedTaskMs = msFromDays(config.unassignedTaskDays);
+    const blockedTaskMs = msFromDays(config.blockedTaskDays);
 
     const latestTs = latestActivityTimestamp(activity) || toTimestamp(project.created_at);
     const inactiveAgeMs = nowTs - latestTs;
@@ -115,6 +123,34 @@ async function evaluateProjectSignals(project, now, config, emit) {
                     title: t.title,
                     createdAt: t.created_at
                 })),
+                occurredAt: now.toISOString()
+            });
+            emitted += 1;
+        }
+    }
+
+    const blockedTasks = findBlockedTasks(tasks, nowTs, blockedTaskMs);
+
+    const riskSummaryInput = {
+        project,
+        now,
+        staleSprints,
+        unassignedOpenTasks: unassignedTasks,
+        blockedTasks,
+        inactiveDays: Math.floor(inactiveAgeMs / (24 * 60 * 60 * 1000))
+    };
+    const riskResult = await generateRiskSummary(riskSummaryInput);
+    if (riskResult.heuristics.totalScore >= config.riskSummaryMinScore) {
+        const key = `${project.project_uid}:ai.risk.summary`;
+        if (shouldEmit(key, nowTs, cooldownMs)) {
+            await emit('ai.risk.summary.generated', {
+                projectId: project.project_uid,
+                guildId: project.guild_id,
+                severity: riskResult.heuristics.severity,
+                totalScore: riskResult.heuristics.totalScore,
+                risks: riskResult.heuristics.risks,
+                summary: riskResult.summary,
+                usedAi: riskResult.usedAi,
                 occurredAt: now.toISOString()
             });
             emitted += 1;

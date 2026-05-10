@@ -12,8 +12,9 @@ function createApiClient({ baseUrl }) {
             return response.json();
         },
 
-        async getProjects(accessToken, guildId) {
-            const response = await fetch(`${baseUrl}/api/projects?guildId=${encodeURIComponent(guildId || '')}`, {
+        async getProjects(accessToken, guildId, workspaceId = '') {
+            const workspaceQuery = workspaceId ? `&workspaceId=${encodeURIComponent(workspaceId)}` : '';
+            const response = await fetch(`${baseUrl}/api/projects?guildId=${encodeURIComponent(guildId || '')}${workspaceQuery}`, {
                 headers: { authorization: `Bearer ${accessToken}` }
             });
 
@@ -24,8 +25,9 @@ function createApiClient({ baseUrl }) {
             return response.json();
         },
 
-        async getProjectDetail(accessToken, projectId) {
-            const response = await fetch(`${baseUrl}/api/projects/${encodeURIComponent(projectId)}`, {
+        async getProjectDetail(accessToken, projectId, workspaceId = '') {
+            const workspaceQuery = workspaceId ? `?workspaceId=${encodeURIComponent(workspaceId)}` : '';
+            const response = await fetch(`${baseUrl}/api/projects/${encodeURIComponent(projectId)}${workspaceQuery}`, {
                 headers: { authorization: `Bearer ${accessToken}` }
             });
 

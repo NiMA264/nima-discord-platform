@@ -165,7 +165,11 @@ function createDashboardServer() {
     app.get('/api/projects', requireAuth, async (req, res) => {
         try {
             const guildId = String(req.query.guildId || '');
-            const projects = await listProjectsForGuild(guildId);
+            const workspaceId = String(req.query.workspaceId || '');
+            const projects = await listProjectsForGuild(guildId, {
+                userId: req.session.user?.id,
+                workspaceId
+            });
             res.json({ projects });
         } catch (err) {
             res.status(500).json({ error: `Project list failed: ${err.message}` });
@@ -174,7 +178,11 @@ function createDashboardServer() {
 
     app.get('/api/projects/:projectId', requireAuth, async (req, res) => {
         try {
-            const detail = await getProjectDashboardView(String(req.params.projectId || ''));
+            const workspaceId = String(req.query.workspaceId || '');
+            const detail = await getProjectDashboardView(String(req.params.projectId || ''), {
+                userId: req.session.user?.id,
+                workspaceId
+            });
             if (!detail) return res.status(404).json({ error: 'Project not found' });
             res.json(detail);
         } catch (err) {
@@ -259,10 +267,12 @@ function createDashboardServer() {
 
     app.get('/app/guild/:guildId/projects', requireAuth, async (req, res) => {
         const guildId = String(req.params.guildId || '');
+        const workspaceId = String(req.query.workspaceId || '');
+        const workspaceQuery = workspaceId ? `?workspaceId=${encodeURIComponent(workspaceId)}` : '';
 
         try {
             const [{ projects }, { roleBindings }] = await Promise.all([
-                apiClient.getProjects(req.session.accessToken, guildId),
+                apiClient.getProjects(req.session.accessToken, guildId, workspaceId),
                 apiClient.getRoleBindings(req.session.accessToken, guildId)
             ]);
 
@@ -271,7 +281,7 @@ function createDashboardServer() {
                     <div class="item">
                         <strong>${project.name}</strong>
                         <div class="meta">${project.project_uid} | status=${project.status}</div>
-                        <a href="/app/projects/${project.project_uid}">Open project</a>
+                        <a href="/app/projects/${project.project_uid}${workspaceQuery}">Open project</a>
                     </div>`).join('')
                 : '<div>No projects found for this guild.</div>';
 
@@ -334,9 +344,11 @@ function createDashboardServer() {
 
     app.get('/app/projects/:projectId', requireAuth, async (req, res) => {
         const projectId = String(req.params.projectId || '');
+        const workspaceId = String(req.query.workspaceId || '');
+        const workspaceQuery = workspaceId ? `?workspaceId=${encodeURIComponent(workspaceId)}` : '';
 
         try {
-            const detail = await apiClient.getProjectDetail(req.session.accessToken, projectId);
+            const detail = await apiClient.getProjectDetail(req.session.accessToken, projectId, workspaceId);
             const project = detail.project;
 
             const feedRows = detail.feed.length
@@ -371,7 +383,7 @@ function createDashboardServer() {
                 `<h1>${project.name}</h1>`,
                 flash,
                 `<div class="meta">${project.project_uid} | status=${project.status}</div>`,
-                '<p><a href="/app">Back to servers</a></p>',
+                `<p><a href="/app${workspaceQuery}">Back to servers</a></p>`,
                 `<p>Counts: logs=${detail.counts.logs}, tasks=${detail.counts.tasks}, sprints=${detail.counts.sprints}</p>`,
                 '</div>',
                 '<div class="row">',

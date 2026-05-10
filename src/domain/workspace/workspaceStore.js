@@ -33,6 +33,15 @@ function findWorkspaceById(workspaceId) {
     `).get(workspaceId) || null;
 }
 
+function findWorkspaceBySlug(slug) {
+    const db = getDatabase();
+    return db.prepare(`
+        SELECT workspace_id AS workspaceId, name, slug, created_at AS createdAt
+        FROM workspaces
+        WHERE slug = ?
+    `).get(slug) || null;
+}
+
 function listWorkspaces() {
     const db = getDatabase();
     return db.prepare(`
@@ -45,7 +54,7 @@ function listWorkspaces() {
 module.exports = {
     createWorkspace,
     findWorkspaceById,
+    findWorkspaceBySlug,
     listWorkspaces,
     normalizeSlug
 };
-

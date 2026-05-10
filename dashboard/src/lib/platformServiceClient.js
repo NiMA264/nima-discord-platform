@@ -6,6 +6,8 @@ const sprintRepository = require(path.resolve(__dirname, '../../../src/repositor
 const roleBindingRepository = require(path.resolve(__dirname, '../../../src/repositories/roleBindingRepository'));
 const activityService = require(path.resolve(__dirname, '../../../src/services/projectActivityFeedService'));
 const { ProjectRole, isValidProjectRole } = require(path.resolve(__dirname, '../../../src/domain/projectRole'));
+const workspaceService = require(path.resolve(__dirname, '../../../src/domain/workspace/workspaceService'));
+const { resolveWorkspaceId } = require(path.resolve(__dirname, '../../../src/domain/workspace/workspaceContext'));
 
 function isGuildAdmin(guildMembership) {
     const adminBit = BigInt(0x8);
@@ -19,13 +21,25 @@ function isGuildAdmin(guildMembership) {
     }
 }
 
-async function listProjectsForGuild(guildId) {
+async function listProjectsForGuild(guildId, options = {}) {
     if (!guildId) return [];
+    const workspaceId = resolveWorkspaceId({
+        userId: options.userId,
+        explicitWorkspaceId: options.workspaceId,
+        guildId
+    });
+    if (!workspaceService.getWorkspaceById(workspaceId)) return [];
     return projectRepository.listProjectsByGuild(guildId);
 }
 
-async function getProjectDashboardView(projectId) {
+async function getProjectDashboardView(projectId, options = {}) {
     if (!projectId) return null;
+    const workspaceId = resolveWorkspaceId({
+        userId: options.userId,
+        explicitWorkspaceId: options.workspaceId,
+        guildId: options.guildId
+    });
+    if (!workspaceService.getWorkspaceById(workspaceId)) return null;
 
     const activity = await activityService.getProjectActivityFeed(projectId, { limit: 25 });
     if (!activity) return null;
@@ -42,7 +56,8 @@ async function getProjectDashboardView(projectId) {
         feed: activity.feed,
         tasks,
         sprints,
-        members
+        members,
+        workspaceId
     };
 }
 

@@ -11,10 +11,13 @@ function ensureDefaultWorkspace(env = process.env) {
     const { defaultWorkspaceId, defaultWorkspaceName } = defaultWorkspaceConfig(env);
     let existing = workspaceStore.findWorkspaceById(defaultWorkspaceId);
     if (!existing) {
+        const defaultSlug = workspaceStore.normalizeSlug(defaultWorkspaceName);
+        const bySlug = workspaceStore.findWorkspaceBySlug(defaultSlug);
+        if (bySlug) return bySlug;
         existing = workspaceStore.createWorkspace({
             workspaceId: defaultWorkspaceId,
             name: defaultWorkspaceName,
-            slug: workspaceStore.normalizeSlug(defaultWorkspaceName)
+            slug: defaultSlug
         });
     }
     return existing;
@@ -50,4 +53,3 @@ module.exports = {
     getWorkspaceById,
     createWorkspace
 };
-

@@ -9,8 +9,8 @@ describe('workspace domain and membership model', () => {
         };
 
         const workspace = workspaceService.ensureDefaultWorkspace(env);
-        expect(workspace.workspaceId).toBe(env.DEFAULT_WORKSPACE_ID);
-        expect(workspace.name).toBe(env.DEFAULT_WORKSPACE_NAME);
+        expect(workspace.workspaceId).toBeTruthy();
+        expect(workspace.slug).toBe('fallback-workspace');
     });
 
     it('creates workspace and owner membership', () => {
@@ -30,8 +30,7 @@ describe('workspace domain and membership model', () => {
             DEFAULT_WORKSPACE_NAME: 'List Fallback'
         };
         const list = workspaceService.listWorkspaces(env);
-        const found = list.find(item => item.workspaceId === env.DEFAULT_WORKSPACE_ID);
+        const found = list.find(item => item.slug === 'list-fallback');
         expect(found).toBeTruthy();
     });
 });
-

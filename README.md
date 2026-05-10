@@ -34,11 +34,13 @@ npm run dev
 ## Release Gate (Phase 2)
 Follow:
 - `docs/phase-2-release-runbook.md`
+- `docs/alpha-release-checklist.md`
 - `docs/operations/production-startup-checklist.md`
 
 Expected gate sequence:
 1. `npm ci`
 2. `npm test`
-3. `node src/deploy-commands.js`
+3. `npx prisma validate`
 4. `npx prisma migrate deploy`
-5. `npm start`
+5. `node src/deploy-commands.js`
+6. `npm start`

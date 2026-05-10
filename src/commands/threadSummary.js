@@ -1,5 +1,6 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { summarizeCurrentThread } = require('../systems/knowledgeSystem');
+const { createKnowledgeExcerpt, embedSafeText } = require('../utils/knowledgeFormatting');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -13,6 +14,12 @@ module.exports = {
             return;
         }
 
-        await interaction.editReply({ content: result.summary });
+        const embed = new EmbedBuilder()
+            .setTitle('Thread Summary')
+            .setDescription(embedSafeText(createKnowledgeExcerpt(result.summary, 3500), 4000))
+            .setFooter({ text: `Thread: ${interaction.channel?.name || interaction.channelId}` })
+            .setTimestamp();
+
+        await interaction.editReply({ embeds: [embed] });
     }
 };

@@ -9,7 +9,9 @@ describe('chat command routing', () => {
             'setup',
             'moderation',
             'ask',
-            'thread-summary'
+            'thread-summary',
+            'knowledge',
+            'dev'
         ]));
     });
 

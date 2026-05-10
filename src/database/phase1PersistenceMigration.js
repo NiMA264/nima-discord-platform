@@ -1,12 +1,5 @@
 const { getDatabase } = require('./database');
-const { dbWarn } = require('../utils/logger');
-
 const statements = [
-    `ALTER TABLE projects ADD COLUMN project_uid TEXT;`,
-    `ALTER TABLE projects ADD COLUMN slug TEXT;`,
-    `ALTER TABLE projects ADD COLUMN repo_url TEXT;`,
-    `ALTER TABLE projects ADD COLUMN github_repo_id TEXT;`,
-    `ALTER TABLE projects ADD COLUMN forum_channel_id TEXT;`,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_projects_project_uid ON projects (project_uid);`,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_projects_slug ON projects (slug);`,
     `CREATE TABLE IF NOT EXISTS project_members (
@@ -79,21 +72,27 @@ const statements = [
     `CREATE INDEX IF NOT EXISTS idx_github_webhook_events_status ON github_webhook_events (status, created_at);`
 ];
 
+function hasColumn(db, table, column) {
+    const columns = db.prepare(`PRAGMA table_info(${table})`).all();
+    return columns.some(item => item.name === column);
+}
+
+function ensureColumn(db, table, column, definition) {
+    if (hasColumn(db, table, column)) return;
+    db.prepare(`ALTER TABLE ${table} ADD COLUMN ${definition};`).run();
+}
+
 function ensurePhase1Persistence() {
     const db = getDatabase();
 
+    ensureColumn(db, 'projects', 'project_uid', 'project_uid TEXT');
+    ensureColumn(db, 'projects', 'slug', 'slug TEXT');
+    ensureColumn(db, 'projects', 'repo_url', 'repo_url TEXT');
+    ensureColumn(db, 'projects', 'github_repo_id', 'github_repo_id TEXT');
+    ensureColumn(db, 'projects', 'forum_channel_id', 'forum_channel_id TEXT');
+
     for (const statement of statements) {
-        try {
-            db.prepare(statement).run();
-        } catch (err) {
-            const isDuplicateColumn = statement.startsWith('ALTER TABLE projects ADD COLUMN')
-                && err.message.includes('duplicate column name');
-            if (isDuplicateColumn) {
-                dbWarn('Optional phase1 migration statement skipped', { error: err.message });
-                continue;
-            }
-            throw err;
-        }
+        db.prepare(statement).run();
     }
 }
 

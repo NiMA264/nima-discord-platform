@@ -2,10 +2,21 @@
 const path = require('path');
 const Database = require('better-sqlite3');
 const { schemaStatements } = require('./schema');
-const { dbInfo, dbError } = require('../utils/logger');
+const { dbInfo, dbWarn, dbError } = require('../utils/logger');
 
 let dbInstance;
-const SCHEMA_VERSION = '3';
+const SCHEMA_VERSION = '7';
+
+function hasColumn(db, table, column) {
+    const columns = db.prepare(`PRAGMA table_info(${table})`).all();
+    return columns.some(item => item.name === column);
+}
+
+function ensureColumn(db, table, column, definition) {
+    if (hasColumn(db, table, column)) return false;
+    db.prepare(`ALTER TABLE ${table} ADD COLUMN ${definition};`).run();
+    return true;
+}
 
 function assertDatabasePathReachable(dbPath) {
     const dir = path.dirname(dbPath);
@@ -37,8 +48,28 @@ function initializeDatabase() {
         dbInstance.pragma('foreign_keys = ON');
 
         for (const statement of schemaStatements) {
-            dbInstance.prepare(statement).run();
+            try {
+                dbInstance.prepare(statement).run();
+            } catch (err) {
+                const optionalFts = statement.includes('fts5') || statement.includes('knowledge_entries_fts');
+                if (optionalFts) {
+                    dbWarn('Optional schema statement skipped', { error: err.message });
+                    continue;
+                }
+                throw err;
+            }
         }
+
+        ensureColumn(dbInstance, 'projects', 'project_uid', 'project_uid TEXT');
+        ensureColumn(dbInstance, 'projects', 'slug', 'slug TEXT');
+        ensureColumn(dbInstance, 'projects', 'repo_url', 'repo_url TEXT');
+        ensureColumn(dbInstance, 'projects', 'github_repo_id', 'github_repo_id TEXT');
+        ensureColumn(dbInstance, 'projects', 'forum_channel_id', 'forum_channel_id TEXT');
+        ensureColumn(dbInstance, 'knowledge_entries', 'is_accepted_solution', 'is_accepted_solution INTEGER NOT NULL DEFAULT 0');
+        ensureColumn(dbInstance, 'knowledge_entries', 'accepted_by', 'accepted_by TEXT');
+        ensureColumn(dbInstance, 'knowledge_entries', 'accepted_at', 'accepted_at TEXT');
+        ensureColumn(dbInstance, 'knowledge_events', 'user_id', 'user_id TEXT');
+        ensureColumn(dbInstance, 'knowledge_events', 'ask_context_id', 'ask_context_id TEXT');
 
         const upsertSchemaVersion = dbInstance.prepare(`
             INSERT INTO db_meta (key, value)

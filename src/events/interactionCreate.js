@@ -9,6 +9,7 @@ const { postRolePanel, applyRoleSelection } = require('../systems/roleSystem');
 const { postTicketPanel, createTicketFromModal, requestTicketClose, confirmTicketClose, cancelTicketClose } = require('../systems/ticketSystem');
 const { postProjectPanel, openProjectCreateModal, openProjectLogModal, createProjectFromModal, addProjectLogFromModal } = require('../systems/projectSystem');
 const { postRules, postServerInfo, postCodingGuidelines, postAiHelpInfo, postProjectGuidelines, postTicketGuidelines, postAnnouncement } = require('../systems/serverControlSystem');
+const { handleAskFeedbackInteraction } = require('../systems/knowledgeSystem');
 const {
     cleanupDuplicateStructure,
     setAdminSelection,
@@ -42,13 +43,13 @@ async function safeReplyWithSplit(interaction, content, payload = {}) {
 
 function denyIfNoManageGuild(interaction) {
     if (hasManageGuildPermission(interaction.member)) return false;
-    safeReply(interaction, { content: 'Nur Admins dürfen diese Aktion ausführen.', flags: 64 });
+    safeReply(interaction, { content: 'Nur Admins duerfen diese Aktion ausfuehren.', flags: 64 });
     return true;
 }
 
 async function runSetupAction(interaction, config, value) {
     if (!hasManageGuildPermission(interaction.member)) {
-        return safeReply(interaction, { content: 'Nur Admins dürfen Setup-Aktionen ausführen.', flags: 64 });
+        return safeReply(interaction, { content: 'Nur Admins duerfen Setup-Aktionen ausfuehren.', flags: 64 });
     }
 
     if (value === 'build') {
@@ -78,7 +79,7 @@ async function runSetupAction(interaction, config, value) {
         await safeDefer(interaction, 64);
         const result = await cleanupDuplicateStructure(interaction.guild, config, { dryRun: false });
         if (!result.ok && result.requiresDryRun) {
-            return safeEditReply(interaction, { content: 'Cleanup Execute blockiert: Bitte zuerst "Cleanup prüfen" ausführen.', components: [] });
+            return safeEditReply(interaction, { content: 'Cleanup Execute blockiert: Bitte zuerst "Cleanup prüfen" ausfuehren.', components: [] });
         }
 
         return safeReply(interaction, {
@@ -161,6 +162,9 @@ module.exports = {
             }
 
             if (interaction.isButton()) {
+                const askFeedback = await handleAskFeedbackInteraction(interaction);
+                if (askFeedback.handled) return;
+
                 if (interaction.customId === 'welcome_access_server') {
                     try {
                         const memberRole = findRole(interaction.guild, config.roles.member);
@@ -198,10 +202,10 @@ module.exports = {
                     }
 
                     const details = deletedLines.length
-                        ? `\nGelöscht:\n${deletedLines.join('\n')}`
-                        : '\nGelöscht:\n- nichts';
+                        ? `\nGeloescht:\n${deletedLines.join('\n')}`
+                        : '\nGeloescht:\n- nichts';
 
-                    return safeReplyWithSplit(interaction, `Cleanup ausgeführt. Gelöscht: ${execution.deleted.channels.length} Channels, ${execution.deleted.categories.length} Kategorien. Übersprungen: ${execution.skipped.length}.${details}`, {
+                    return safeReplyWithSplit(interaction, `Cleanup ausgeführt. Geloescht: ${execution.deleted.channels.length} Channels, ${execution.deleted.categories.length} Kategorien. Uebersprungen: ${execution.skipped.length}.${details}`, {
                         flags: 64
                     });
                 }
@@ -277,7 +281,7 @@ module.exports = {
 
                         const section = sectionMap[selected];
                         if (!section) {
-                            return safeReply(interaction, { content: 'Ungültige Build-Auswahl.', flags: 64 });
+                            return safeReply(interaction, { content: 'Ungueltige Build-Auswahl.', flags: 64 });
                         }
 
                         const report = section === 'all'
@@ -348,12 +352,12 @@ module.exports = {
                         });
 
                         if (!result.ok) {
-                            return safeReply(interaction, { content: `Ankündigung fehlgeschlagen: ${result.reason}`, flags: 64 });
+                            return safeReply(interaction, { content: `Ankuendigung fehlgeschlagen: ${result.reason}`, flags: 64 });
                         }
 
-                        return safeReply(interaction, { content: `Ankündigung veröffentlicht: ${result.message}`, flags: 64 });
+                        return safeReply(interaction, { content: `Ankuendigung veroeffentlicht: ${result.message}`, flags: 64 });
                     } catch (err) {
-                        return safeInteractionError(interaction, err, 'Fehler bei der Ankündigung.');
+                        return safeInteractionError(interaction, err, 'Fehler bei der Ankuendigung.');
                     }
                 }
             }
@@ -362,4 +366,5 @@ module.exports = {
         }
     }
 };
+
 

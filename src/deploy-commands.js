@@ -13,6 +13,7 @@ const projectCommand = require('./commands/project');
 const taskCommand = require('./commands/task');
 const sprintCommand = require('./commands/sprint');
 const aiCommand = require('./commands/ai');
+const helpCommand = require('./commands/help');
 
 const deployLog = scoped('DEPLOY');
 
@@ -40,7 +41,8 @@ async function deploy() {
         projectCommand.data.toJSON(),
         taskCommand.data.toJSON(),
         sprintCommand.data.toJSON(),
-        aiCommand.data.toJSON()
+        aiCommand.data.toJSON(),
+        helpCommand.data.toJSON()
     ];
     const rest = new REST({ version: '10' }).setToken(token);
 

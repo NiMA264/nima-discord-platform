@@ -63,6 +63,13 @@ const statements = {
         WHERE project_uid = ? AND user_id = ?
         LIMIT 1
     `),
+    findGuildMemberRole: db.prepare(`
+        SELECT pm.role
+        FROM project_members pm
+        JOIN projects p ON p.project_uid = pm.project_uid
+        WHERE p.guild_id = ? AND pm.user_id = ? AND pm.role IN ('PROJECT_LEAD', 'MAINTAINER')
+        LIMIT 1
+    `),
     insertProjectLog: db.prepare(`
         INSERT INTO project_logs (project_uid, source, event_type, content, created_at)
         VALUES (?, ?, ?, ?, ?)
@@ -138,6 +145,11 @@ async function findProjectMemberRole(projectUid, userId) {
     return row ? row.role : null;
 }
 
+async function hasGuildProjectLeadOrMaintainerRole(guildId, userId) {
+    const row = statements.findGuildMemberRole.get(guildId, userId);
+    return Boolean(row);
+}
+
 async function createProjectLog({ projectUid, source, eventType, content, createdAt }) {
     return statements.insertProjectLog.run(
         projectUid,
@@ -160,5 +172,6 @@ module.exports = {
     removeProjectMember,
     archiveProject,
     findProjectMemberRole,
+    hasGuildProjectLeadOrMaintainerRole,
     createProjectLog
 };

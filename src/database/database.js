@@ -14,7 +14,14 @@ function hasColumn(db, table, column) {
 
 function ensureColumn(db, table, column, definition) {
     if (hasColumn(db, table, column)) return false;
-    db.prepare(`ALTER TABLE ${table} ADD COLUMN ${definition};`).run();
+    try {
+        db.prepare(`ALTER TABLE ${table} ADD COLUMN ${definition};`).run();
+    } catch (err) {
+        if (String(err?.message || '').toLowerCase().includes('duplicate column name')) {
+            return false;
+        }
+        throw err;
+    }
     return true;
 }
 
@@ -72,6 +79,7 @@ function initializeDatabase() {
         ensureColumn(dbInstance, 'knowledge_events', 'ask_context_id', 'ask_context_id TEXT');
         ensureColumn(dbInstance, 'guild_settings', 'welcome_channel_id', 'welcome_channel_id TEXT');
         ensureColumn(dbInstance, 'guild_settings', 'bot_channel_id', 'bot_channel_id TEXT');
+        ensureColumn(dbInstance, 'guild_settings', 'help_channel_id', 'help_channel_id TEXT');
         ensureColumn(dbInstance, 'guild_settings', 'project_forum_channel_id', 'project_forum_channel_id TEXT');
         ensureColumn(dbInstance, 'guild_settings', 'knowledge_channel_id', 'knowledge_channel_id TEXT');
         ensureColumn(dbInstance, 'guild_settings', 'setup_category_id', 'setup_category_id TEXT');

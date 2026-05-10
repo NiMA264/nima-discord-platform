@@ -71,6 +71,7 @@
         github_enabled INTEGER NOT NULL DEFAULT 0,
         welcome_channel_id TEXT,
         bot_channel_id TEXT,
+        help_channel_id TEXT,
         project_forum_channel_id TEXT,
         knowledge_channel_id TEXT,
         setup_category_id TEXT

@@ -8,6 +8,7 @@ const projectCommand = require('../commands/project');
 const taskCommand = require('../commands/task');
 const sprintCommand = require('../commands/sprint');
 const aiCommand = require('../commands/ai');
+const helpCommand = require('../commands/help');
 const { handleCommandError } = require('../lib/handleCommandError');
 const metrics = require('../lib/metrics');
 
@@ -21,7 +22,8 @@ const commandMap = {
     project: projectCommand,
     task: taskCommand,
     sprint: sprintCommand,
-    ai: aiCommand
+    ai: aiCommand,
+    help: helpCommand
 };
 
 async function handleChatInputCommand(interaction, config) {
@@ -37,7 +39,7 @@ async function handleChatInputCommand(interaction, config) {
     } catch (err) {
         metrics.increment('command_failure_total', 1, { command: interaction.commandName });
         timer.stop({ status: 'failure' });
-        await handleCommandError(interaction, err, `Fehler beim Ausführen von /${interaction.commandName}.`);
+        await handleCommandError(interaction, err, `Fehler beim AusfÃ¼hren von /${interaction.commandName}.`);
         return true;
     }
 }

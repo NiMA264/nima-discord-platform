@@ -6,6 +6,7 @@ function getGuildChannelConfig(guildId) {
         setupCategoryId: row.setup_category_id || null,
         welcomeChannelId: row.welcome_channel_id || null,
         botChannelId: row.bot_channel_id || null,
+        helpChannelId: row.help_channel_id || null,
         projectForumChannelId: row.project_forum_channel_id || null,
         knowledgeChannelId: row.knowledge_channel_id || null
     };

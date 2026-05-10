@@ -41,6 +41,13 @@ module.exports = {
                 )
                 .addChannelOption(option =>
                     option
+                        .setName('help_channel')
+                        .setDescription('Help/guide channel')
+                        .addChannelTypes(ChannelType.GuildText)
+                        .setRequired(false)
+                )
+                .addChannelOption(option =>
+                    option
                         .setName('project_forum_channel')
                         .setDescription('Project forum channel')
                         .addChannelTypes(ChannelType.GuildForum)
@@ -65,6 +72,7 @@ module.exports = {
             const setupCategory = interaction.options.getChannel('setup_category', true);
             const welcomeChannel = interaction.options.getChannel('welcome_channel', true);
             const botChannel = interaction.options.getChannel('bot_channel', true);
+            const helpChannel = interaction.options.getChannel('help_channel', false);
             const projectForumChannel = interaction.options.getChannel('project_forum_channel', true);
             const knowledgeChannel = interaction.options.getChannel('knowledge_channel', false);
 
@@ -73,6 +81,7 @@ module.exports = {
                 setupCategoryId: setupCategory.id,
                 welcomeChannelId: welcomeChannel.id,
                 botChannelId: botChannel.id,
+                helpChannelId: helpChannel?.id || null,
                 projectForumChannelId: projectForumChannel.id,
                 knowledgeChannelId: knowledgeChannel?.id || null
             });
@@ -82,6 +91,7 @@ module.exports = {
                 `- setupCategoryId: ${setupCategory.id} (${setupCategory.name})`,
                 `- welcomeChannelId: ${welcomeChannel.id} (${welcomeChannel.name})`,
                 `- botChannelId: ${botChannel.id} (${botChannel.name})`,
+                `- helpChannelId: ${helpChannel?.id || 'none'}${helpChannel ? ` (${helpChannel.name})` : ''}`,
                 `- projectForumChannelId: ${projectForumChannel.id} (${projectForumChannel.name})`,
                 `- knowledgeChannelId: ${knowledgeChannel?.id || 'none'}${knowledgeChannel ? ` (${knowledgeChannel.name})` : ''}`
             ];

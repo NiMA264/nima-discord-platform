@@ -14,13 +14,15 @@ const statements = {
             guild_id,
             welcome_channel_id,
             bot_channel_id,
+            help_channel_id,
             project_forum_channel_id,
             knowledge_channel_id,
             setup_category_id
-        ) VALUES (?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(guild_id) DO UPDATE SET
             welcome_channel_id = excluded.welcome_channel_id,
             bot_channel_id = excluded.bot_channel_id,
+            help_channel_id = excluded.help_channel_id,
             project_forum_channel_id = excluded.project_forum_channel_id,
             knowledge_channel_id = excluded.knowledge_channel_id,
             setup_category_id = excluded.setup_category_id
@@ -35,6 +37,7 @@ function upsertGuildChannelSettings({
     guildId,
     welcomeChannelId,
     botChannelId,
+    helpChannelId,
     projectForumChannelId,
     knowledgeChannelId,
     setupCategoryId
@@ -43,6 +46,7 @@ function upsertGuildChannelSettings({
         guildId,
         welcomeChannelId || null,
         botChannelId || null,
+        helpChannelId || null,
         projectForumChannelId || null,
         knowledgeChannelId || null,
         setupCategoryId || null

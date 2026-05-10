@@ -11,7 +11,8 @@ describe('chat command routing', () => {
             'ask',
             'thread-summary',
             'knowledge',
-            'dev'
+            'dev',
+            'help'
         ]));
     });
 

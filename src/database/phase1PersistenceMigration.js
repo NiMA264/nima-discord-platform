@@ -26,6 +26,7 @@ const statements = [
         github_enabled INTEGER NOT NULL DEFAULT 0,
         welcome_channel_id TEXT,
         bot_channel_id TEXT,
+        help_channel_id TEXT,
         project_forum_channel_id TEXT,
         knowledge_channel_id TEXT,
         setup_category_id TEXT
@@ -84,7 +85,12 @@ function hasColumn(db, table, column) {
 
 function ensureColumn(db, table, column, definition) {
     if (hasColumn(db, table, column)) return;
-    db.prepare(`ALTER TABLE ${table} ADD COLUMN ${definition};`).run();
+    try {
+        db.prepare(`ALTER TABLE ${table} ADD COLUMN ${definition};`).run();
+    } catch (err) {
+        if (String(err?.message || '').toLowerCase().includes('duplicate column name')) return;
+        throw err;
+    }
 }
 
 function ensurePhase1Persistence() {
@@ -97,6 +103,7 @@ function ensurePhase1Persistence() {
     ensureColumn(db, 'projects', 'forum_channel_id', 'forum_channel_id TEXT');
     ensureColumn(db, 'guild_settings', 'welcome_channel_id', 'welcome_channel_id TEXT');
     ensureColumn(db, 'guild_settings', 'bot_channel_id', 'bot_channel_id TEXT');
+    ensureColumn(db, 'guild_settings', 'help_channel_id', 'help_channel_id TEXT');
     ensureColumn(db, 'guild_settings', 'project_forum_channel_id', 'project_forum_channel_id TEXT');
     ensureColumn(db, 'guild_settings', 'knowledge_channel_id', 'knowledge_channel_id TEXT');
     ensureColumn(db, 'guild_settings', 'setup_category_id', 'setup_category_id TEXT');

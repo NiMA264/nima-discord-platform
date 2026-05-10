@@ -16,6 +16,7 @@ describe('/setup channels', () => {
             setup_category: { id: 'cat-1', name: 'Setup', type: 4 },
             welcome_channel: { id: 'txt-1', name: 'welcome', type: 0 },
             bot_channel: { id: 'txt-2', name: 'bots', type: 0 },
+            help_channel: { id: 'txt-help', name: 'help', type: 0 },
             project_forum_channel: { id: 'frm-1', name: 'projects', type: 15 },
             knowledge_channel: { id: 'txt-3', name: 'knowledge', type: 0 }
         };
@@ -40,6 +41,7 @@ describe('/setup channels', () => {
         const row = getGuildSettings(guildId);
         expect(row.welcome_channel_id).toBe('txt-1');
         expect(row.bot_channel_id).toBe('txt-2');
+        expect(row.help_channel_id).toBe('txt-help');
         expect(row.project_forum_channel_id).toBe('frm-1');
         expect(row.knowledge_channel_id).toBe('txt-3');
         expect(row.setup_category_id).toBe('cat-1');

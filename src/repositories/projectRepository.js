@@ -114,6 +114,21 @@ async function findProjectMemberRole(projectUid, userId) {
     return rows.length ? rows[0].role : null;
 }
 
+async function hasGuildProjectLeadOrMaintainerRole(guildId, userId) {
+    if (useFallback()) return sqliteAdapter.hasGuildProjectLeadOrMaintainerRole(guildId, userId);
+    const prisma = getPrisma();
+    const rows = await prisma.$queryRaw`
+        SELECT pm.role
+        FROM project_members pm
+        JOIN projects p ON p.project_uid = pm.project_uid
+        WHERE p.guild_id = ${guildId}
+          AND pm.user_id = ${userId}
+          AND pm.role IN ('PROJECT_LEAD', 'MAINTAINER')
+        LIMIT 1
+    `;
+    return rows.length > 0;
+}
+
 async function createProjectLog({ projectUid, source, eventType, content, createdAt }) {
     if (useFallback()) return sqliteAdapter.createProjectLog({ projectUid, source, eventType, content, createdAt });
     const prisma = getPrisma();
@@ -135,5 +150,6 @@ module.exports = {
     removeProjectMember,
     archiveProject,
     findProjectMemberRole,
+    hasGuildProjectLeadOrMaintainerRole,
     createProjectLog
 };

@@ -12,6 +12,7 @@ const { startGithubWebhookServer } = require('./integrations/github/githubWebhoo
 const { startGithubEventWorker } = require('./workers/githubEventWorker');
 const { startScheduledDigestWorker } = require('./workers/digestWorker');
 const { startInactivityDetectionWorker } = require('./workers/inactivityDetectionWorker');
+const { startPublicApiServer } = require('./api/v1/server');
 const { registerNotificationAdapter } = require('./services/notificationService');
 const {
     createDiscordNotificationAdapter,
@@ -96,12 +97,18 @@ function initializeAutomationLayer() {
     info('Automation layer ready');
 }
 
+function initializePublicApiLayer() {
+    startPublicApiServer();
+    info('Public API layer ready');
+}
+
 async function bootstrap() {
     registerGlobalErrorHandlers();
     validateStartupEnv();
     initializePersistenceLayer();
     initializeNotificationLayer();
     initializeAutomationLayer();
+    initializePublicApiLayer();
 
     info('Starting NiMa Discord bot', {
         guildId: config.guildId,

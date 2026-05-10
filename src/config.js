@@ -9,6 +9,8 @@ module.exports = {
     token: process.env.DISCORD_TOKEN,
     clientId: process.env.DISCORD_CLIENT_ID,
     guildId: process.env.DISCORD_GUILD_ID,
+    supportGuildId: process.env.SUPPORT_GUILD_ID || '',
+    supportInviteUrl: process.env.SUPPORT_INVITE_URL || '',
     theme,
     roles,
     channels,

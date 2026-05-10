@@ -11,6 +11,7 @@ const aiCommand = require('../commands/ai');
 const helpCommand = require('../commands/help');
 const { handleCommandError } = require('../lib/handleCommandError');
 const metrics = require('../lib/metrics');
+const { requireSupportGuildMembership } = require('../guards/requireSupportGuildMembership');
 
 const commandMap = {
     setup: setupCommand,
@@ -29,6 +30,9 @@ const commandMap = {
 async function handleChatInputCommand(interaction, config) {
     const handler = commandMap[interaction.commandName];
     if (!handler) return false;
+
+    const supportGate = await requireSupportGuildMembership(interaction);
+    if (!supportGate.ok) return true;
 
     const timer = metrics.startTimer('command_execution', { command: interaction.commandName });
     try {

@@ -33,6 +33,11 @@ function validateEnvironment(env = process.env) {
         warnings.push(warning);
         envLog.warn(warning);
     }
+    if (String(env.SUPPORT_GUILD_ID || '').trim() !== '' && String(env.SUPPORT_INVITE_URL || '').trim() === '') {
+        const warning = 'SUPPORT_GUILD_ID set without SUPPORT_INVITE_URL - support gate messages will not include invite link';
+        warnings.push(warning);
+        envLog.warn(warning);
+    }
 
     return { ok: true, missing: [], warnings };
 }

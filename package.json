@@ -1,7 +1,7 @@
 {
   "name": "nima-discord",
   "version": "1.0.0",
-  "description": "NiMa Discord modular community bot",
+  "description": "NiMa Discord developer collaboration platform (support server required: https://discord.gg/AXdpsawDYE)",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",

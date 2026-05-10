@@ -1,4 +1,5 @@
 const { hasManageGuildPermission } = require('../utils/permissions');
+const { buildSupportGateMessage } = require('../content/supportServerNotice');
 
 const EPHEMERAL_FLAG = 64;
 
@@ -31,9 +32,11 @@ async function requireSupportGuildMembership(interaction, options = {}) {
         await isMemberOfSupportGuild(interaction, cfg.supportGuildId);
         return { ok: true, skipped: false };
     } catch (_err) {
-        const inviteSuffix = cfg.supportInviteUrl ? ` ${cfg.supportInviteUrl}` : '';
         await interaction.reply({
-            content: `Bitte tritt zuerst unserem Support-Discord bei:${inviteSuffix}`.trim(),
+            content: buildSupportGateMessage({
+                ...process.env,
+                SUPPORT_INVITE_URL: cfg.supportInviteUrl || process.env.SUPPORT_INVITE_URL
+            }),
             flags: EPHEMERAL_FLAG
         });
         return { ok: false, skipped: false, reason: 'not_member' };
@@ -44,4 +47,3 @@ module.exports = {
     supportGateConfig,
     requireSupportGuildMembership
 };
-

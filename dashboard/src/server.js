@@ -19,6 +19,7 @@ const {
     updateProjectMemberRole,
     isGuildAdmin
 } = require('./lib/platformServiceClient');
+const { getSupportInviteUrl } = require('../../src/content/supportServerNotice');
 
 const PROJECT_ROLES = ['PROJECT_LEAD', 'MAINTAINER', 'REVIEWER', 'CONTRIBUTOR'];
 
@@ -88,6 +89,7 @@ function flashFromQuery(query) {
 
 function createDashboardServer() {
     const env = loadDashboardEnv(process.env);
+    const supportInviteUrl = getSupportInviteUrl(process.env);
     const app = express();
     const apiClient = createApiClient({ baseUrl: `http://127.0.0.1:${env.port}` });
 
@@ -96,7 +98,15 @@ function createDashboardServer() {
 
     app.get('/', (req, res) => {
         if (!req.session?.accessToken) {
-            const body = '<div class="card"><h1>Dashboard Access</h1><p>Login with Discord to continue.</p><p><a href="/login">Login with Discord</a></p></div>';
+            const body = [
+                '<div class="card">',
+                '<h1>Dashboard Access</h1>',
+                '<p>Login with Discord to continue.</p>',
+                '<p><strong>Pflicht:</strong> Mitglied im offiziellen NiMa Support-Server.</p>',
+                `<p><a href="${supportInviteUrl}" target="_blank" rel="noreferrer">Support-Server beitreten</a></p>`,
+                '<p><a href="/login">Login with Discord</a></p>',
+                '</div>'
+            ].join('');
             return res.send(renderLayout({ title: 'Dashboard Login', body, user: null }));
         }
 

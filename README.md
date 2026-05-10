@@ -13,6 +13,13 @@ Discord-native developer collaboration platform with project lifecycle, role-bas
 - Dashboard v1 scaffold with Discord OAuth boundary
 - Help/setup onboarding (`/setup channels`, `/help publish`)
 
+## Support Server Requirement
+Bot usage is gated by support-server membership.
+
+- Official invite: https://discord.gg/AXdpsawDYE
+- Users not in the support server receive an ephemeral access message with invite link.
+- Purpose: updates, help, setup guidance, and incident communication.
+
 ## Architecture
 ```txt
 Discord Client / Dashboard Client
@@ -58,7 +65,13 @@ GITHUB_WEBHOOK_SECRET=...
 Notes:
 - `OPENAI_API_KEY` is optional; AI commands fall back to deterministic summaries.
 - `SUPPORT_GUILD_ID` is optional; when set, bot commands require membership in that support guild.
+- Recommended invite for production: `https://discord.gg/AXdpsawDYE`
 - If `GITHUB_WEBHOOK_ENABLED=true`, `GITHUB_WEBHOOK_SECRET` is required.
+
+## Bot/App Description Copy
+Use this copy in both bot description and Discord application description:
+
+`NiMa is a Discord-native developer collaboration platform (projects, tasks, sprints, AI summaries). Support-server membership is required for usage: https://discord.gg/AXdpsawDYE`
 
 ## Local Development
 ```bash

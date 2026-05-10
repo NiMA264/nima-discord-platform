@@ -1,46 +1,91 @@
-# NiMa Discord
+﻿# NiMa Discord Platform
 
-Discord bot platform with project/task/sprint workflows, AI-assisted knowledge retrieval, and operational workers.
+Discord-native developer collaboration platform with project lifecycle, role-based permissions, GitHub event ingestion, activity feeds, and AI-assisted summaries.
 
-## Tech Stack
-- Node.js (CommonJS)
-- discord.js
-- SQLite (`better-sqlite3`)
-- OpenAI API
-- Vitest
+## Highlights
+- Persistent project domain (`projects`, members, tasks, milestones, logs)
+- DB-first command flow (Discord is client, DB is source of truth)
+- Role guard (`PROJECT_LEAD`, `MAINTAINER`, `REVIEWER`, `CONTRIBUTOR`)
+- GitHub webhook ingest with normalized activity events
+- Queue/worker runtime for async processing
+- Reconciliation + repair flows for Discord↔DB integrity
+- Notification pipeline via `NotificationService`
+- Dashboard v1 scaffold with Discord OAuth boundary
+- Help/setup onboarding (`/setup channels`, `/help publish`)
 
-## Main Areas
-- Bot runtime: `src/index.js`
-- Commands: `src/commands/*`
-- Systems/services: `src/systems/*`, `src/services/*`
-- Persistence: `src/database/*`, `src/repositories/*`, `prisma/*`
-- Dashboard: `dashboard/*`
-- Tests: `test/*`
+## Architecture
+```txt
+Discord Client / Dashboard Client
+    -> Command/API Layer
+    -> Service Layer
+    -> Repository Layer
+    -> Persistence (SQLite/Prisma)
+    -> Queue + Workers
+    -> Integrations (GitHub, AI)
+```
 
-## Local Run
-1. Install dependencies:
+## Repository Layout
+- `src/commands/` slash commands (`/project`, `/task`, `/sprint`, `/ai`, `/setup`, `/help`)
+- `src/services/` domain orchestration and boundaries
+- `src/repositories/` persistence access
+- `src/workers/` async workers
+- `src/integrations/` external ingress/egress
+- `src/database/`, `prisma/` schema + migrations
+- `dashboard/` web client (Phase 3A)
+- `docs/` runbooks and operational checklists
+- `test/` vitest test suite
+
+## Prerequisites
+- Node.js 20+
+- npm 10+
+- Discord bot application
+
+## Environment
+Create `.env`:
+
+```env
+DISCORD_TOKEN=...
+DISCORD_CLIENT_ID=...
+DISCORD_GUILD_ID=...
+DATABASE_URL="file:./dev.db"
+OPENAI_API_KEY=...
+GITHUB_WEBHOOK_ENABLED=false
+GITHUB_WEBHOOK_SECRET=...
+```
+
+Notes:
+- `OPENAI_API_KEY` is optional; AI commands fall back to deterministic summaries.
+- If `GITHUB_WEBHOOK_ENABLED=true`, `GITHUB_WEBHOOK_SECRET` is required.
+
+## Local Development
 ```bash
 npm ci
-```
-2. Run tests:
-```bash
 npm test
-```
-3. Start in dev mode:
-```bash
-npm run dev
+npx prisma validate
+npx prisma migrate deploy
+node src/deploy-commands.js
+npm start
 ```
 
-## Release Gate (Phase 2)
-Follow:
-- `docs/phase-2-release-runbook.md`
-- `docs/alpha-release-checklist.md`
-- `docs/operations/production-startup-checklist.md`
+## Core Commands
+- `/setup channels`
+- `/help publish`
+- `/project create`, `/project log`, `/project feed`, `/project repair`
+- `/project member add`, `/project member remove`, `/project archive`
+- `/task create`, `/task assign`, `/task close`
+- `/sprint start`, `/sprint close`
+- `/ai summarize project`, `/ai changelog`, `/ai blockers`
 
-Expected gate sequence:
-1. `npm ci`
-2. `npm test`
-3. `npx prisma validate`
-4. `npx prisma migrate deploy`
-5. `node src/deploy-commands.js`
-6. `npm start`
+## Release
+- Alpha checklist: `docs/alpha-release-checklist.md`
+- Runbook: `docs/phase-2-release-runbook.md`
+- Startup checklist: `docs/operations/production-startup-checklist.md`
+
+## Contributing
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Security
+See [SECURITY.md](SECURITY.md).
+
+## License
+MIT

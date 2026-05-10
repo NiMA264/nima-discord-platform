@@ -1,0 +1,36 @@
+﻿name: CI
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Validate Prisma Schema
+        run: npx prisma validate
+        env:
+          DATABASE_URL: "file:./dev.db"
+
+      - name: Run Tests
+        run: npm test
+        env:
+          DATABASE_URL: "file:./dev.db"
+          DISCORD_TOKEN: "test"
+          DISCORD_CLIENT_ID: "test"
+          DISCORD_GUILD_ID: "test"

@@ -1,13 +1,16 @@
 const { getDatabase } = require('../database/database');
 const { ProjectRole } = require('../domain/projectRole');
+const { resolveWorkspaceId } = require('../domain/workspace/workspaceContext');
+const { ensurePhase1Persistence } = require('../database/phase1PersistenceMigration');
 
+ensurePhase1Persistence();
 const db = getDatabase();
 
 const statements = {
     createProject: db.prepare(`
         INSERT INTO projects (
-            project_uid, guild_id, thread_id, creator_id, name, slug, description, stack, status, forum_channel_id, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            project_uid, workspace_id, guild_id, thread_id, creator_id, name, slug, description, stack, status, forum_channel_id, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `),
     updateProjectThreadId: db.prepare(`
         UPDATE projects
@@ -16,24 +19,24 @@ const statements = {
     `),
     findByName: db.prepare(`
         SELECT * FROM projects
-        WHERE guild_id = ? AND lower(name) = lower(?)
+        WHERE workspace_id = ? AND guild_id = ? AND lower(name) = lower(?)
         ORDER BY id DESC
         LIMIT 1
     `),
     findByUid: db.prepare(`
         SELECT * FROM projects
-        WHERE project_uid = ?
+        WHERE project_uid = ? AND workspace_id = ?
         LIMIT 1
     `),
     listLogsByProject: db.prepare(`
         SELECT * FROM project_logs
-        WHERE project_uid = ?
+        WHERE project_uid = ? AND workspace_id = ?
         ORDER BY created_at DESC
         LIMIT ?
     `),
     listByGuild: db.prepare(`
         SELECT * FROM projects
-        WHERE guild_id = ?
+        WHERE workspace_id = ? AND guild_id = ?
         ORDER BY id DESC
     `),
     listMembersByProject: db.prepare(`
@@ -71,15 +74,24 @@ const statements = {
         LIMIT 1
     `),
     insertProjectLog: db.prepare(`
-        INSERT INTO project_logs (project_uid, source, event_type, content, created_at)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO project_logs (project_uid, workspace_id, source, event_type, content, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+    `),
+    findProjectWorkspace: db.prepare(`
+        SELECT workspace_id FROM projects WHERE project_uid = ? LIMIT 1
     `)
 };
 
 async function createProjectEntity(data) {
     const now = data.createdAt || new Date().toISOString();
+    const workspaceId = resolveWorkspaceId({
+        userId: data.creatorId,
+        explicitWorkspaceId: data.workspaceId,
+        guildId: data.guildId
+    });
     statements.createProject.run(
         data.projectUid,
+        workspaceId,
         data.guildId,
         data.threadId || 'pending',
         data.creatorId,
@@ -98,16 +110,19 @@ async function updateProjectThreadId(projectUid, threadId) {
     return statements.updateProjectThreadId.run(threadId, projectUid);
 }
 
-async function findProjectByName(guildId, name) {
-    return statements.findByName.get(guildId, name) || null;
+async function findProjectByName(guildId, name, options = {}) {
+    const workspaceId = resolveWorkspaceId({ guildId, explicitWorkspaceId: options.workspaceId });
+    return statements.findByName.get(workspaceId, guildId, name) || null;
 }
 
-async function findProjectByUid(projectUid) {
-    return statements.findByUid.get(projectUid) || null;
+async function findProjectByUid(projectUid, workspaceIdInput) {
+    const workspaceId = resolveWorkspaceId({ explicitWorkspaceId: workspaceIdInput });
+    return statements.findByUid.get(projectUid, workspaceId) || null;
 }
 
-async function listProjectLogs(projectUid, limit = 30) {
-    const rows = statements.listLogsByProject.all(projectUid, limit);
+async function listProjectLogs(projectUid, limit = 30, workspaceIdInput) {
+    const workspaceId = resolveWorkspaceId({ explicitWorkspaceId: workspaceIdInput });
+    const rows = statements.listLogsByProject.all(projectUid, workspaceId, limit);
     return rows.map(row => ({
         ...row,
         content: (() => {
@@ -120,8 +135,9 @@ async function listProjectLogs(projectUid, limit = 30) {
     }));
 }
 
-async function listProjectsByGuild(guildId) {
-    return statements.listByGuild.all(guildId);
+async function listProjectsByGuild(guildId, options = {}) {
+    const workspaceId = resolveWorkspaceId({ guildId, explicitWorkspaceId: options.workspaceId });
+    return statements.listByGuild.all(workspaceId, guildId);
 }
 
 async function listProjectMembers(projectUid) {
@@ -150,9 +166,12 @@ async function hasGuildProjectLeadOrMaintainerRole(guildId, userId) {
     return Boolean(row);
 }
 
-async function createProjectLog({ projectUid, source, eventType, content, createdAt }) {
+async function createProjectLog({ projectUid, source, eventType, content, createdAt, workspaceId: workspaceIdInput }) {
+    const derivedWorkspaceId = statements.findProjectWorkspace.get(projectUid)?.workspace_id;
+    const workspaceId = resolveWorkspaceId({ explicitWorkspaceId: workspaceIdInput || derivedWorkspaceId });
     return statements.insertProjectLog.run(
         projectUid,
+        workspaceId,
         source,
         eventType,
         JSON.stringify(content || {}),

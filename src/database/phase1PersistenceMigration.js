@@ -117,6 +117,9 @@ function ensurePhase1Persistence() {
     ensureColumn(db, 'projects', 'repo_url', 'repo_url TEXT');
     ensureColumn(db, 'projects', 'github_repo_id', 'github_repo_id TEXT');
     ensureColumn(db, 'projects', 'forum_channel_id', 'forum_channel_id TEXT');
+    ensureColumn(db, 'projects', 'workspace_id', `workspace_id TEXT NOT NULL DEFAULT 'default-workspace'`);
+    ensureColumn(db, 'project_logs', 'workspace_id', `workspace_id TEXT NOT NULL DEFAULT 'default-workspace'`);
+    ensureColumn(db, 'tasks', 'workspace_id', `workspace_id TEXT NOT NULL DEFAULT 'default-workspace'`);
     ensureColumn(db, 'guild_settings', 'welcome_channel_id', 'welcome_channel_id TEXT');
     ensureColumn(db, 'guild_settings', 'bot_channel_id', 'bot_channel_id TEXT');
     ensureColumn(db, 'guild_settings', 'help_channel_id', 'help_channel_id TEXT');
@@ -127,6 +130,36 @@ function ensurePhase1Persistence() {
     for (const statement of statements) {
         db.prepare(statement).run();
     }
+
+    db.prepare(`
+        UPDATE projects
+        SET workspace_id = 'default-workspace'
+        WHERE workspace_id IS NULL OR trim(workspace_id) = ''
+    `).run();
+    db.prepare(`
+        UPDATE project_logs
+        SET workspace_id = (
+            SELECT p.workspace_id FROM projects p WHERE p.project_uid = project_logs.project_uid
+        )
+        WHERE workspace_id IS NULL OR trim(workspace_id) = ''
+    `).run();
+    db.prepare(`
+        UPDATE project_logs
+        SET workspace_id = 'default-workspace'
+        WHERE workspace_id IS NULL OR trim(workspace_id) = ''
+    `).run();
+    db.prepare(`
+        UPDATE tasks
+        SET workspace_id = (
+            SELECT p.workspace_id FROM projects p WHERE p.project_uid = tasks.project_uid
+        )
+        WHERE workspace_id IS NULL OR trim(workspace_id) = ''
+    `).run();
+    db.prepare(`
+        UPDATE tasks
+        SET workspace_id = 'default-workspace'
+        WHERE workspace_id IS NULL OR trim(workspace_id) = ''
+    `).run();
 }
 
 module.exports = {

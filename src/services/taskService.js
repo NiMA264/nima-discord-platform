@@ -4,22 +4,27 @@ const {
     assignTask: assignTaskRepository,
     closeTask: closeTaskRepository
 } = require('../repositories/taskRepository');
-const { createProjectLog } = require('../repositories/projectRepository');
+const { createProjectLog, findProjectByUid } = require('../repositories/projectRepository');
 const { notifyDomainEvent } = require('./notificationService');
 
 async function createTask({ projectId, title, description, actorId }) {
+    const project = await findProjectByUid(projectId);
+    if (!project) return null;
+
     const taskId = await createTaskEntity({
         projectUid: projectId,
         title,
         description,
-        createdBy: actorId
+        createdBy: actorId,
+        workspaceId: project.workspace_id
     });
 
     await createProjectLog({
         projectUid: projectId,
         source: 'SYSTEM',
         eventType: 'task.created',
-        content: { taskId, title, description, actorId }
+        content: { taskId, title, description, actorId },
+        workspaceId: project.workspace_id
     });
 
     return findTaskByUid(taskId);
@@ -34,7 +39,8 @@ async function assignTask({ taskId, userId, actorId }) {
         projectUid: task.project_uid,
         source: 'SYSTEM',
         eventType: 'task.assigned',
-        content: { taskId, userId, actorId }
+        content: { taskId, userId, actorId },
+        workspaceId: task.workspace_id
     });
 
     const updated = await findTaskByUid(taskId);
@@ -59,7 +65,8 @@ async function closeTask({ taskId, actorId }) {
         projectUid: task.project_uid,
         source: 'SYSTEM',
         eventType: 'task.closed',
-        content: { taskId, actorId }
+        content: { taskId, actorId },
+        workspaceId: task.workspace_id
     });
 
     const updated = await findTaskByUid(taskId);

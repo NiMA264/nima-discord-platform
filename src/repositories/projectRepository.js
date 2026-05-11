@@ -1,6 +1,7 @@
 const { getPrisma } = require('../lib/prisma');
 const sqliteAdapter = require('./projectRepository.sqlite');
 const { ProjectRole } = require('../domain/projectRole');
+const { resolveWorkspaceId } = require('../domain/workspace/workspaceContext');
 
 function useFallback() {
     return process.env.PROJECT_REPO_ADAPTER === 'sqlite';
@@ -13,12 +14,13 @@ function rowOrNull(rows) {
 async function createProjectEntity(data) {
     if (useFallback()) return sqliteAdapter.createProjectEntity(data);
 
+    const workspaceId = resolveWorkspaceId({ userId: data.creatorId, explicitWorkspaceId: data.workspaceId, guildId: data.guildId });
     const prisma = getPrisma();
     await prisma.$executeRaw`
         INSERT INTO projects (
-            project_uid, guild_id, thread_id, creator_id, name, slug, description, stack, status, forum_channel_id, created_at
+            project_uid, workspace_id, guild_id, thread_id, creator_id, name, slug, description, stack, status, forum_channel_id, created_at
         ) VALUES (
-            ${data.projectUid}, ${data.guildId}, ${data.threadId || 'pending'}, ${data.creatorId}, ${data.name}, ${data.slug},
+            ${data.projectUid}, ${workspaceId}, ${data.guildId}, ${data.threadId || 'pending'}, ${data.creatorId}, ${data.name}, ${data.slug},
             ${data.description || ''}, ${data.stack || ''}, ${data.status}, ${data.forumChannelId || null}, ${data.createdAt || new Date().toISOString()}
         )
     `;
@@ -32,27 +34,36 @@ async function updateProjectThreadId(projectUid, threadId) {
     return prisma.$executeRaw`UPDATE projects SET thread_id = ${threadId} WHERE project_uid = ${projectUid}`;
 }
 
-async function findProjectByName(guildId, name) {
-    if (useFallback()) return sqliteAdapter.findProjectByName(guildId, name);
+async function findProjectByName(guildId, name, options = {}) {
+    if (useFallback()) return sqliteAdapter.findProjectByName(guildId, name, options);
+    const workspaceId = resolveWorkspaceId({ guildId, explicitWorkspaceId: options.workspaceId });
     const prisma = getPrisma();
     const rows = await prisma.$queryRaw`
-        SELECT * FROM projects WHERE guild_id = ${guildId} AND lower(name) = lower(${name}) ORDER BY id DESC LIMIT 1
+        SELECT * FROM projects
+        WHERE workspace_id = ${workspaceId} AND guild_id = ${guildId} AND lower(name) = lower(${name})
+        ORDER BY id DESC LIMIT 1
     `;
     return rowOrNull(rows);
 }
 
-async function findProjectByUid(projectUid) {
-    if (useFallback()) return sqliteAdapter.findProjectByUid(projectUid);
+async function findProjectByUid(projectUid, workspaceIdInput) {
+    if (useFallback()) return sqliteAdapter.findProjectByUid(projectUid, workspaceIdInput);
+    const workspaceId = resolveWorkspaceId({ explicitWorkspaceId: workspaceIdInput });
     const prisma = getPrisma();
-    const rows = await prisma.$queryRaw`SELECT * FROM projects WHERE project_uid = ${projectUid} LIMIT 1`;
+    const rows = await prisma.$queryRaw`
+        SELECT * FROM projects WHERE project_uid = ${projectUid} AND workspace_id = ${workspaceId} LIMIT 1
+    `;
     return rowOrNull(rows);
 }
 
-async function listProjectLogs(projectUid, limit = 30) {
-    if (useFallback()) return sqliteAdapter.listProjectLogs(projectUid, limit);
+async function listProjectLogs(projectUid, limit = 30, workspaceIdInput) {
+    if (useFallback()) return sqliteAdapter.listProjectLogs(projectUid, limit, workspaceIdInput);
+    const workspaceId = resolveWorkspaceId({ explicitWorkspaceId: workspaceIdInput });
     const prisma = getPrisma();
     const rows = await prisma.$queryRaw`
-        SELECT * FROM project_logs WHERE project_uid = ${projectUid} ORDER BY created_at DESC LIMIT ${limit}
+        SELECT * FROM project_logs
+        WHERE project_uid = ${projectUid} AND workspace_id = ${workspaceId}
+        ORDER BY created_at DESC LIMIT ${limit}
     `;
     return rows.map(row => ({
         ...row,
@@ -66,10 +77,13 @@ async function listProjectLogs(projectUid, limit = 30) {
     }));
 }
 
-async function listProjectsByGuild(guildId) {
-    if (useFallback()) return sqliteAdapter.listProjectsByGuild(guildId);
+async function listProjectsByGuild(guildId, options = {}) {
+    if (useFallback()) return sqliteAdapter.listProjectsByGuild(guildId, options);
+    const workspaceId = resolveWorkspaceId({ guildId, explicitWorkspaceId: options.workspaceId });
     const prisma = getPrisma();
-    return prisma.$queryRaw`SELECT * FROM projects WHERE guild_id = ${guildId} ORDER BY id DESC`;
+    return prisma.$queryRaw`
+        SELECT * FROM projects WHERE workspace_id = ${workspaceId} AND guild_id = ${guildId} ORDER BY id DESC
+    `;
 }
 
 async function listProjectMembers(projectUid) {
@@ -129,12 +143,19 @@ async function hasGuildProjectLeadOrMaintainerRole(guildId, userId) {
     return rows.length > 0;
 }
 
-async function createProjectLog({ projectUid, source, eventType, content, createdAt }) {
-    if (useFallback()) return sqliteAdapter.createProjectLog({ projectUid, source, eventType, content, createdAt });
+async function createProjectLog({ projectUid, source, eventType, content, createdAt, workspaceId: workspaceIdInput }) {
+    if (useFallback()) return sqliteAdapter.createProjectLog({ projectUid, source, eventType, content, createdAt, workspaceId: workspaceIdInput });
     const prisma = getPrisma();
+    let workspaceId = workspaceIdInput;
+    if (!workspaceId) {
+        const row = rowOrNull(await prisma.$queryRaw`SELECT workspace_id FROM projects WHERE project_uid = ${projectUid} LIMIT 1`);
+        workspaceId = row?.workspace_id;
+    }
+    workspaceId = resolveWorkspaceId({ explicitWorkspaceId: workspaceId });
+
     return prisma.$executeRaw`
-        INSERT INTO project_logs (project_uid, source, event_type, content, created_at)
-        VALUES (${projectUid}, ${source}, ${eventType}, ${JSON.stringify(content || {})}, ${createdAt || new Date().toISOString()})
+        INSERT INTO project_logs (project_uid, workspace_id, source, event_type, content, created_at)
+        VALUES (${projectUid}, ${workspaceId}, ${source}, ${eventType}, ${JSON.stringify(content || {})}, ${createdAt || new Date().toISOString()})
     `;
 }
 

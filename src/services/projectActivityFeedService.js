@@ -44,12 +44,12 @@ function normalizeSprintEntry(sprint) {
 
 async function getProjectActivityFeed(projectId, options = {}) {
     const limit = Number(options.limit || 30);
-    const project = await findProjectByUid(projectId);
+    const project = await findProjectByUid(projectId, options.workspaceId);
     if (!project) return null;
 
     const [logs, tasks, sprints] = await Promise.all([
-        listProjectLogs(projectId, limit),
-        listTasksByProject(projectId, limit),
+        listProjectLogs(projectId, limit, project.workspace_id),
+        listTasksByProject(projectId, limit, project.workspace_id),
         listSprintsByProject(projectId, Math.max(10, Math.floor(limit / 2)))
     ]);
 

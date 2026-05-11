@@ -72,6 +72,9 @@ function initializeDatabase() {
         ensureColumn(dbInstance, 'projects', 'repo_url', 'repo_url TEXT');
         ensureColumn(dbInstance, 'projects', 'github_repo_id', 'github_repo_id TEXT');
         ensureColumn(dbInstance, 'projects', 'forum_channel_id', 'forum_channel_id TEXT');
+        ensureColumn(dbInstance, 'projects', 'workspace_id', `workspace_id TEXT NOT NULL DEFAULT 'default-workspace'`);
+        ensureColumn(dbInstance, 'project_logs', 'workspace_id', `workspace_id TEXT NOT NULL DEFAULT 'default-workspace'`);
+        ensureColumn(dbInstance, 'tasks', 'workspace_id', `workspace_id TEXT NOT NULL DEFAULT 'default-workspace'`);
         ensureColumn(dbInstance, 'knowledge_entries', 'is_accepted_solution', 'is_accepted_solution INTEGER NOT NULL DEFAULT 0');
         ensureColumn(dbInstance, 'knowledge_entries', 'accepted_by', 'accepted_by TEXT');
         ensureColumn(dbInstance, 'knowledge_entries', 'accepted_at', 'accepted_at TEXT');
@@ -83,6 +86,12 @@ function initializeDatabase() {
         ensureColumn(dbInstance, 'guild_settings', 'project_forum_channel_id', 'project_forum_channel_id TEXT');
         ensureColumn(dbInstance, 'guild_settings', 'knowledge_channel_id', 'knowledge_channel_id TEXT');
         ensureColumn(dbInstance, 'guild_settings', 'setup_category_id', 'setup_category_id TEXT');
+
+        dbInstance.prepare(`
+            UPDATE projects
+            SET workspace_id = 'default-workspace'
+            WHERE workspace_id IS NULL OR trim(workspace_id) = ''
+        `).run();
 
         const upsertSchemaVersion = dbInstance.prepare(`
             INSERT INTO db_meta (key, value)

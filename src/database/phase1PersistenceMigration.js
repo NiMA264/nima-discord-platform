@@ -57,7 +57,8 @@ const statements = [
     `CREATE INDEX IF NOT EXISTS idx_workspace_memberships_workspace ON workspace_memberships (workspace_id, role);`,
     `CREATE TABLE IF NOT EXISTS workspace_settings (
         workspace_id TEXT PRIMARY KEY,
-        digest_channel_id TEXT
+        digest_channel_id TEXT,
+        slack_webhook_url TEXT
     );`,
     `CREATE TABLE IF NOT EXISTS tasks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -132,6 +133,7 @@ function ensurePhase1Persistence() {
     ensureColumn(db, 'guild_settings', 'project_forum_channel_id', 'project_forum_channel_id TEXT');
     ensureColumn(db, 'guild_settings', 'knowledge_channel_id', 'knowledge_channel_id TEXT');
     ensureColumn(db, 'guild_settings', 'setup_category_id', 'setup_category_id TEXT');
+    ensureColumn(db, 'workspace_settings', 'slack_webhook_url', 'slack_webhook_url TEXT');
 
     for (const statement of statements) {
         db.prepare(statement).run();

@@ -87,6 +87,7 @@ function initializeDatabase() {
         ensureColumn(dbInstance, 'guild_settings', 'project_forum_channel_id', 'project_forum_channel_id TEXT');
         ensureColumn(dbInstance, 'guild_settings', 'knowledge_channel_id', 'knowledge_channel_id TEXT');
         ensureColumn(dbInstance, 'guild_settings', 'setup_category_id', 'setup_category_id TEXT');
+        ensureColumn(dbInstance, 'workspace_settings', 'slack_webhook_url', 'slack_webhook_url TEXT');
 
         dbInstance.prepare(`
             UPDATE projects

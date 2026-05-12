@@ -5,11 +5,13 @@ process.env.PROJECT_REPO_ADAPTER = 'sqlite';
 const workspaceServiceModule = await import('../src/domain/workspace/workspaceService.js');
 const projectRepoModule = await import('../src/repositories/projectRepository.sqlite.js');
 const taskRepoModule = await import('../src/repositories/taskRepository.sqlite.js');
+const domainEventServiceModule = await import('../src/domain/events/domainEventService.js');
 const platformServiceClientModule = await import('../dashboard/src/lib/platformServiceClient.js');
 
 const workspaceService = workspaceServiceModule.default || workspaceServiceModule;
 const projectRepo = projectRepoModule.default || projectRepoModule;
 const taskRepo = taskRepoModule.default || taskRepoModule;
+const domainEventService = domainEventServiceModule.default || domainEventServiceModule;
 const platformServiceClient = platformServiceClientModule.default || platformServiceClientModule;
 
 describe('dashboard workspace flows', () => {
@@ -56,5 +58,38 @@ describe('dashboard workspace flows', () => {
 
         const detailWrongWorkspace = await platformServiceClient.getProjectDashboardView(projectB, { workspaceId: wsA, guildId, userId: 'u-a' });
         expect(detailWrongWorkspace).toBeNull();
+    });
+
+    it('returns workflow suggestions scoped to the requested workspace', async () => {
+        const guildId = `guild-suggestions-${Date.now()}`;
+        const wsA = workspaceService.createWorkspace({ name: `WS-SA-${Date.now()}`, ownerUserId: 'u-a' }).workspaceId;
+        const wsB = workspaceService.createWorkspace({ name: `WS-SB-${Date.now()}`, ownerUserId: 'u-b' }).workspaceId;
+
+        for (let i = 0; i < 6; i += 1) {
+            domainEventService.recordDomainEvent({
+                workspaceId: wsB,
+                type: 'task.assigned',
+                entityType: 'task',
+                entityId: `task-b-${Date.now()}-${i}`,
+                metadata: { projectId: 'project-b', assigneeUserId: 'discord-b' }
+            });
+        }
+
+        domainEventService.recordDomainEvent({
+            workspaceId: wsA,
+            type: 'task.assigned',
+            entityType: 'task',
+            entityId: `task-a-${Date.now()}`,
+            metadata: { projectId: 'project-a', assigneeUserId: 'discord-a' }
+        });
+
+        const suggestionsB = await platformServiceClient.getWorkflowSuggestionsForGuild(guildId, {
+            workspaceId: wsB,
+            userId: 'u-b'
+        });
+
+        expect(suggestionsB.workspaceId).toBe(wsB);
+        expect(suggestionsB.suggestions.some(item => item.type === 'overloaded_assignee')).toBe(true);
+        expect(suggestionsB.suggestions.every(item => item.entityId !== 'discord-a')).toBe(true);
     });
 });

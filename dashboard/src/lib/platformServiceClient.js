@@ -6,6 +6,7 @@ const sprintRepository = require(path.resolve(__dirname, '../../../src/repositor
 const roleBindingRepository = require(path.resolve(__dirname, '../../../src/repositories/roleBindingRepository'));
 const activityService = require(path.resolve(__dirname, '../../../src/services/projectActivityFeedService'));
 const analyticsService = require(path.resolve(__dirname, '../../../src/services/analyticsService'));
+const aiWorkflowSuggestionService = require(path.resolve(__dirname, '../../../src/services/aiWorkflowSuggestionService'));
 const { ProjectRole, isValidProjectRole } = require(path.resolve(__dirname, '../../../src/domain/projectRole'));
 const workspaceService = require(path.resolve(__dirname, '../../../src/domain/workspace/workspaceService'));
 const { resolveWorkspaceId } = require(path.resolve(__dirname, '../../../src/domain/workspace/workspaceContext'));
@@ -82,6 +83,21 @@ async function getAnalyticsOverviewForGuild(guildId, options = {}) {
     });
 }
 
+async function getWorkflowSuggestionsForGuild(guildId, options = {}) {
+    if (!guildId) {
+        return {
+            workspaceId: '',
+            suggestions: []
+        };
+    }
+
+    return aiWorkflowSuggestionService.getWorkflowSuggestions({
+        guildId,
+        userId: options.userId,
+        workspaceId: options.workspaceId
+    });
+}
+
 function listRoleBindingsForGuild(guildId) {
     if (!guildId) return [];
     return roleBindingRepository.listRoleBindingsByGuild(guildId);
@@ -144,6 +160,7 @@ module.exports = {
     listProjectsForGuild,
     getProjectDashboardView,
     getAnalyticsOverviewForGuild,
+    getWorkflowSuggestionsForGuild,
     listRoleBindingsForGuild,
     updateRoleBinding,
     deleteRoleBinding,

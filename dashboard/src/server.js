@@ -15,6 +15,7 @@ const {
     listProjectsForGuild,
     getProjectDashboardView,
     getAnalyticsOverviewForGuild,
+    getWorkflowSuggestionsForGuild,
     listRoleBindingsForGuild,
     updateRoleBinding,
     updateProjectMemberRole,
@@ -97,6 +98,13 @@ function taskStatusBadge(status) {
     if (value === 'done') return '<span class="badge badge-done">done</span>';
     if (value === 'in_progress') return '<span class="badge badge-progress">in_progress</span>';
     return '<span class="badge badge-open">open</span>';
+}
+
+function suggestionSeverityBadge(severity) {
+    const normalized = String(severity || '').toLowerCase();
+    if (normalized === 'high') return '<span class="badge badge-open">high</span>';
+    if (normalized === 'low') return '<span class="badge badge-done">low</span>';
+    return '<span class="badge badge-progress">medium</span>';
 }
 
 function createDashboardServer() {
@@ -216,6 +224,20 @@ function createDashboardServer() {
         }
     });
 
+    app.get('/api/analytics/suggestions', requireAuth, async (req, res) => {
+        try {
+            const guildId = String(req.query.guildId || '');
+            const workspaceId = String(req.query.workspaceId || '');
+            const suggestions = await getWorkflowSuggestionsForGuild(guildId, {
+                userId: req.session.user?.id,
+                workspaceId
+            });
+            res.json({ suggestions });
+        } catch (err) {
+            res.status(500).json({ error: `Workflow suggestions failed: ${err.message}` });
+        }
+    });
+
     app.get('/api/guilds/:guildId/role-bindings', requireAuth, async (req, res) => {
         try {
             const guildId = String(req.params.guildId || '');
@@ -297,10 +319,11 @@ function createDashboardServer() {
         const workspaceQuery = workspaceId ? `?workspaceId=${encodeURIComponent(workspaceId)}` : '';
 
         try {
-            const [{ projects }, { roleBindings }, { overview }] = await Promise.all([
+            const [{ projects }, { roleBindings }, { overview }, { suggestions }] = await Promise.all([
                 apiClient.getProjects(req.session.accessToken, guildId, workspaceId),
                 apiClient.getRoleBindings(req.session.accessToken, guildId),
-                apiClient.getAnalyticsOverview(req.session.accessToken, guildId, workspaceId)
+                apiClient.getAnalyticsOverview(req.session.accessToken, guildId, workspaceId),
+                apiClient.getWorkflowSuggestions(req.session.accessToken, guildId, workspaceId)
             ]);
 
             const rows = projects.length
@@ -315,6 +338,9 @@ function createDashboardServer() {
             const bindingRows = roleBindings.length
                 ? roleBindings.map(binding => `<div class="item"><strong>${binding.project_role}</strong> -> ${binding.discord_role_id}</div>`).join('')
                 : '<div>No role bindings configured.</div>';
+            const suggestionRows = suggestions?.suggestions?.length
+                ? suggestions.suggestions.map(item => `<div class="item"><strong>${item.type}</strong> ${suggestionSeverityBadge(item.severity)}<div>${item.message}</div><div class="meta">entity=${item.entityId || '-'} | workspace=${suggestions.workspaceId || '-'}</div></div>`).join('')
+                : '<div>No workflow suggestions.</div>';
 
             const flash = flashFromQuery(req.query);
             const isAdmin = isGuildAdmin(getGuildMembership(req, guildId));
@@ -342,6 +368,10 @@ function createDashboardServer() {
                 `<div class="item"><strong>completedTasks</strong> ${overview.completedTasks}</div>`,
                 `<div class="item"><strong>completionRate</strong> ${(Number(overview.completionRate || 0) * 100).toFixed(1)}%</div>`,
                 `<div class="item"><strong>activityVolume</strong> ${overview.activityVolume}</div>`,
+                '</div>',
+                '<div class="card">',
+                '<h2>Workflow Suggestions</h2>',
+                suggestionRows,
                 '</div>',
                 '<div class="card">',
                 '<h2>Guild Role Bindings</h2>',

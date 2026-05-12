@@ -33,23 +33,42 @@ function renderLayout({ title, body, user }) {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${title}</title>
   <style>
+    * { box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; background: #0b1020; color: #e9eefc; }
-    header { display:flex; justify-content:space-between; padding:16px 24px; background:#121a33; border-bottom:1px solid #27325c; }
-    main { padding: 24px; max-width: 960px; margin: 0 auto; }
+    header { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:16px 24px; background:#121a33; border-bottom:1px solid #27325c; flex-wrap:wrap; }
+    main { padding: 24px; max-width: 1100px; margin: 0 auto; width: 100%; }
     a, a:visited { color: #8ab4ff; }
-    .card { background:#121a33; border:1px solid #27325c; border-radius:12px; padding:16px; margin-bottom: 16px; }
-    .guild, .item { padding:8px 0; border-bottom:1px solid #27325c; }
+    .card { background:#121a33; border:1px solid #27325c; border-radius:12px; padding:16px; margin-bottom: 16px; min-width: 0; }
+    .guild, .item { padding:8px 0; border-bottom:1px solid #27325c; overflow-wrap:anywhere; word-break:break-word; }
     .guild:last-child, .item:last-child { border-bottom:none; }
     .meta { color: #aab6df; font-size: 12px; }
-    .row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .row { display:grid; grid-template-columns:1fr 1fr; gap:16px; min-width: 0; }
+    .kpi-grid { display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .kpi { border:1px solid #27325c; border-radius:10px; padding:10px; background:#0f1730; min-width:0; }
+    .kpi strong { display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.04em; color:#aab6df; margin-bottom:4px; }
+    .kpi span { font-size:20px; font-weight:700; color:#e9eefc; }
     .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; margin-left:8px; }
     .badge-open { background:#153b2d; color:#8ef5c6; }
     .badge-progress { background:#3a2d14; color:#ffd98a; }
     .badge-done { background:#1c2b52; color:#9dc1ff; }
     .flash-ok { color:#6ee7b7; }
     .flash-error { color:#fca5a5; }
-    input, select, button { padding: 6px 8px; margin-right:8px; }
+    input, select, button { padding: 6px 8px; margin-right:8px; max-width:100%; }
     form { margin-top: 10px; }
+    @media (max-width: 900px) {
+      main { padding: 16px; }
+      .row { grid-template-columns: 1fr; }
+      .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 600px) {
+      header { padding: 12px 14px; }
+      main { padding: 12px; }
+      .card { padding: 12px; border-radius:10px; }
+      .kpi-grid { grid-template-columns: 1fr; gap: 8px; }
+      .badge { margin-top: 6px; margin-left: 0; }
+      form { display:grid; gap:8px; }
+      input, select, button { width: 100%; margin-right:0; }
+    }
   </style>
 </head>
 <body>
@@ -362,12 +381,14 @@ function createDashboardServer() {
                 '</div>',
                 '<div class="card">',
                 '<h2>Analytics Overview</h2>',
-                `<div class="item"><strong>activeProjects</strong> ${overview.activeProjects}</div>`,
-                `<div class="item"><strong>openTasks</strong> ${overview.openTasks}</div>`,
-                `<div class="item"><strong>inProgressTasks</strong> ${overview.inProgressTasks}</div>`,
-                `<div class="item"><strong>completedTasks</strong> ${overview.completedTasks}</div>`,
-                `<div class="item"><strong>completionRate</strong> ${(Number(overview.completionRate || 0) * 100).toFixed(1)}%</div>`,
-                `<div class="item"><strong>activityVolume</strong> ${overview.activityVolume}</div>`,
+                '<div class="kpi-grid">',
+                `<div class="kpi"><strong>activeProjects</strong><span>${overview.activeProjects}</span></div>`,
+                `<div class="kpi"><strong>openTasks</strong><span>${overview.openTasks}</span></div>`,
+                `<div class="kpi"><strong>inProgressTasks</strong><span>${overview.inProgressTasks}</span></div>`,
+                `<div class="kpi"><strong>completedTasks</strong><span>${overview.completedTasks}</span></div>`,
+                `<div class="kpi"><strong>completionRate</strong><span>${(Number(overview.completionRate || 0) * 100).toFixed(1)}%</span></div>`,
+                `<div class="kpi"><strong>activityVolume</strong><span>${overview.activityVolume}</span></div>`,
+                '</div>',
                 '</div>',
                 '<div class="card">',
                 '<h2>Workflow Suggestions</h2>',

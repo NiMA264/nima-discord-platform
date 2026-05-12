@@ -6,6 +6,7 @@ import activityRoute from '../src/api/v1/routes/activity.js';
 import workspacesRoute from '../src/api/v1/routes/workspaces.js';
 import analyticsRoute from '../src/api/v1/routes/analytics.js';
 import activityInsightsRoute from '../src/api/v1/routes/activityInsights.js';
+import workflowSuggestionsRoute from '../src/api/v1/routes/workflowSuggestions.js';
 
 const { authenticateApiRequest } = authModule;
 
@@ -104,5 +105,29 @@ describe('public api v1 scaffold', () => {
         expect(response.body.data).toHaveProperty('topActiveProjects');
         expect(response.body.data).toHaveProperty('recentAssignments');
         expect(response.body.data).toHaveProperty('recentStatusChanges');
+    });
+
+    it('workflow suggestions route exposes stable v1 shape', async () => {
+        const previousAdapter = process.env.PROJECT_REPO_ADAPTER;
+        try {
+            process.env.PROJECT_REPO_ADAPTER = 'sqlite';
+            const context = { authMode: 'disabled' };
+            const response = await workflowSuggestionsRoute.getWorkflowSuggestions({
+                query: {
+                    guildId: `guild-${Date.now()}`,
+                    workspaceId: ''
+                }
+            }, {}, context);
+
+            expect(response.statusCode).toBe(200);
+            expect(response.body).toHaveProperty('ok', true);
+            expect(response.body).toHaveProperty('meta.resource', 'workflowSuggestions');
+            expect(response.body).toHaveProperty('meta.version', 'v1');
+            expect(response.body.data).toHaveProperty('workspaceId');
+            expect(response.body.data).toHaveProperty('suggestions');
+            expect(Array.isArray(response.body.data.suggestions)).toBe(true);
+        } finally {
+            process.env.PROJECT_REPO_ADAPTER = previousAdapter;
+        }
     });
 });

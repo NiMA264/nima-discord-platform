@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nima-discord.local/projections/v1/github-activity-read-model.schema.json",
+  "title": "Github Activity Read Model v1",
+  "type": "object",
+  "required": [
+    "readModelVersion",
+    "activeRepositories",
+    "recentGithubEvents"
+  ],
+  "properties": {
+    "readModelVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "activeRepositories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["repositoryFullName", "eventCount"],
+        "properties": {
+          "repositoryFullName": { "type": "string" },
+          "eventCount": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "recentGithubEvents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "repositoryFullName", "actor", "url", "createdAt"],
+        "properties": {
+          "eventUid": { "type": "string" },
+          "type": { "type": "string" },
+          "repositoryFullName": { "type": "string" },
+          "actor": { "type": "string" },
+          "url": { "type": "string" },
+          "createdAt": { "type": "string" }
+        }
+      }
+    }
+  }
+}

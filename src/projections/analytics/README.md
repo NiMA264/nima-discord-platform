@@ -13,3 +13,6 @@ Constraints:
 - Projection logic is idempotent and side-effect free.
 - Runtime processes events in deterministic order.
 - Unknown event types are skipped or collected and must not crash runtime.
+
+Projection outputs are validated against versioned read-model contracts.
+Validation is currently non-blocking and intended as an architectural guardrail.

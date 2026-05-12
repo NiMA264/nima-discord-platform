@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nima-discord.local/projections/v1/contribution-read-model.schema.json",
+  "title": "Contribution Read Model v1",
+  "type": "object",
+  "required": [
+    "readModelVersion",
+    "contributionCounts"
+  ],
+  "properties": {
+    "readModelVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "contributionCounts": {
+      "type": "object",
+      "required": ["push", "pullRequestsOpened", "issuesOpened"],
+      "properties": {
+        "push": { "type": "integer", "minimum": 0 },
+        "pullRequestsOpened": { "type": "integer", "minimum": 0 },
+        "issuesOpened": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

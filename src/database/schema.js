@@ -106,6 +106,23 @@
         UNIQUE(workspace_id, user_id)
     );`,
     `CREATE INDEX IF NOT EXISTS idx_workspace_memberships_workspace ON workspace_memberships (workspace_id, role);`,
+    `CREATE TABLE IF NOT EXISTS tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        task_uid TEXT NOT NULL UNIQUE,
+        workspace_id TEXT NOT NULL DEFAULT 'default-workspace',
+        project_uid TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT,
+        status TEXT NOT NULL DEFAULT 'open',
+        assignee_user_id TEXT,
+        assigned_to TEXT,
+        created_by TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        closed_at TEXT
+    );`,
+    `CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks (project_uid, status, created_at);`,
+    `CREATE INDEX IF NOT EXISTS idx_tasks_workspace ON tasks (workspace_id, project_uid, created_at);`,
+    `CREATE INDEX IF NOT EXISTS idx_tasks_assignee ON tasks (workspace_id, assignee_user_id, status);`,
     `CREATE TABLE IF NOT EXISTS github_webhook_events (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         guild_id TEXT,

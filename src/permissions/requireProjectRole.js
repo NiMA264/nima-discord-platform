@@ -11,6 +11,7 @@ async function requireProjectRole({ interaction, projectId, allowed }) {
         return { ok: true };
     }
 
+    // Legacy/default path: command interactions do not pass workspace yet; resolver boundary owns fallback behavior.
     const project = await findProjectByUid(projectId);
     if (!project || project.guild_id !== interaction.guild.id) {
         return { ok: false, reason: 'Project not found.' };

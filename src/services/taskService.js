@@ -7,8 +7,8 @@ const {
 const { createProjectLog, findProjectByUid } = require('../repositories/projectRepository');
 const { notifyDomainEvent } = require('./notificationService');
 
-async function createTask({ projectId, title, description, actorId }) {
-    const project = await findProjectByUid(projectId);
+async function createTask({ projectId, title, description, actorId, workspaceId }) {
+    const project = await findProjectByUid(projectId, workspaceId);
     if (!project) return null;
 
     const taskId = await createTaskEntity({

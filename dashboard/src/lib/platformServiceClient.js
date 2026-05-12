@@ -29,7 +29,7 @@ async function listProjectsForGuild(guildId, options = {}) {
         guildId
     });
     if (!workspaceService.getWorkspaceById(workspaceId)) return [];
-    return projectRepository.listProjectsByGuild(guildId);
+    return projectRepository.listProjectsByGuild(guildId, { workspaceId });
 }
 
 async function getProjectDashboardView(projectId, options = {}) {
@@ -41,11 +41,11 @@ async function getProjectDashboardView(projectId, options = {}) {
     });
     if (!workspaceService.getWorkspaceById(workspaceId)) return null;
 
-    const activity = await activityService.getProjectActivityFeed(projectId, { limit: 25 });
+    const activity = await activityService.getProjectActivityFeed(projectId, { limit: 25, workspaceId });
     if (!activity) return null;
 
     const [tasks, sprints, members] = await Promise.all([
-        taskRepository.listTasksByProject(projectId, 25),
+        taskRepository.listTasksByProject(projectId, 25, workspaceId),
         sprintRepository.listSprintsByProject(projectId, 25),
         projectRepository.listProjectMembers(projectId)
     ]);
@@ -93,6 +93,7 @@ async function updateProjectMemberRole({ actorUserId, projectId, targetUserId, t
         return { ok: false, status: 400, error: 'Invalid member role payload.' };
     }
 
+    // Legacy/default path: this route currently has no workspace input and relies on repository resolver boundary.
     const project = await projectRepository.findProjectByUid(projectId);
     if (!project) {
         return { ok: false, status: 404, error: 'Project not found.' };

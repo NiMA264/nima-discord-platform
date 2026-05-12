@@ -142,6 +142,7 @@ async function removeMemberFromProject(projectUid, userId, actorId) {
 }
 
 async function repairProject({ guild, projectId, actorId }) {
+    // Legacy/default path: repair is guild-scoped and currently does not receive an explicit workspace.
     const project = await findProjectByUid(projectId);
     if (!project) return null;
 

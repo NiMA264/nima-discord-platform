@@ -6,6 +6,7 @@ const projectsRoute = require('./routes/projects');
 const tasksRoute = require('./routes/tasks');
 const activityRoute = require('./routes/activity');
 const workspacesRoute = require('./routes/workspaces');
+const analyticsRoute = require('./routes/analytics');
 
 function sendJson(res, statusCode, payload) {
     res.statusCode = statusCode;
@@ -34,6 +35,7 @@ function resolveHandler(method, pathname) {
     if (pathname === '/v1/tasks' && method === 'POST') return { handler: tasksRoute.postTasks, params: {} };
     if (pathname === '/v1/activity' && method === 'GET') return { handler: activityRoute.getActivity, params: {} };
     if (pathname === '/v1/activity' && method === 'POST') return { handler: activityRoute.postActivity, params: {} };
+    if (pathname === '/v1/analytics/overview' && method === 'GET') return { handler: analyticsRoute.getAnalyticsOverview, params: {} };
     return null;
 }
 
@@ -58,8 +60,12 @@ function startPublicApiServer() {
 
         try {
             const body = req.method === 'POST' ? await readJsonBody(req) : {};
-            const requestWithParams = { ...req, params: resolved.params || {} };
-            const result = resolved.handler(requestWithParams, body, auth.context);
+            const requestWithParams = {
+                ...req,
+                params: resolved.params || {},
+                query: Object.fromEntries(requestUrl.searchParams.entries())
+            };
+            const result = await resolved.handler(requestWithParams, body, auth.context);
             sendJson(res, result.statusCode || 200, result.body || { ok: true });
         } catch (err) {
             sendJson(res, 400, {

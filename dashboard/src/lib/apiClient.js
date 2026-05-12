@@ -38,6 +38,19 @@ function createApiClient({ baseUrl }) {
             return response.json();
         },
 
+        async getAnalyticsOverview(accessToken, guildId, workspaceId = '') {
+            const workspaceQuery = workspaceId ? `&workspaceId=${encodeURIComponent(workspaceId)}` : '';
+            const response = await fetch(`${baseUrl}/api/analytics/overview?guildId=${encodeURIComponent(guildId || '')}${workspaceQuery}`, {
+                headers: { authorization: `Bearer ${accessToken}` }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Analytics API request failed: ${response.status}`);
+            }
+
+            return response.json();
+        },
+
         async getRoleBindings(accessToken, guildId) {
             const response = await fetch(`${baseUrl}/api/guilds/${encodeURIComponent(guildId)}/role-bindings`, {
                 headers: { authorization: `Bearer ${accessToken}` }

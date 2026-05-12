@@ -4,6 +4,7 @@ import projectsRoute from '../src/api/v1/routes/projects.js';
 import tasksRoute from '../src/api/v1/routes/tasks.js';
 import activityRoute from '../src/api/v1/routes/activity.js';
 import workspacesRoute from '../src/api/v1/routes/workspaces.js';
+import analyticsRoute from '../src/api/v1/routes/analytics.js';
 
 const { authenticateApiRequest } = authModule;
 
@@ -54,5 +55,31 @@ describe('public api v1 scaffold', () => {
         expect(detailResponse.statusCode).toBe(200);
         expect(createResponse.body).toHaveProperty('meta.resource', 'workspaces');
         expect(detailResponse.body).toHaveProperty('meta.version', 'v1');
+    });
+
+    it('analytics overview route exposes stable v1 shape', async () => {
+        const previousAdapter = process.env.PROJECT_REPO_ADAPTER;
+        try {
+            process.env.PROJECT_REPO_ADAPTER = 'sqlite';
+            const context = { authMode: 'disabled' };
+            const response = await analyticsRoute.getAnalyticsOverview({
+                query: {
+                    guildId: `guild-${Date.now()}`,
+                    workspaceId: ''
+                }
+            }, {}, context);
+
+            expect(response.statusCode).toBe(200);
+            expect(response.body).toHaveProperty('ok', true);
+            expect(response.body).toHaveProperty('meta.resource', 'analytics');
+            expect(response.body).toHaveProperty('meta.version', 'v1');
+            expect(response.body).toHaveProperty('meta.placeholder', false);
+            expect(response.body.data).toHaveProperty('activeProjects');
+            expect(response.body.data).toHaveProperty('openTasks');
+            expect(response.body.data).toHaveProperty('completedTasks');
+            expect(response.body.data).toHaveProperty('activityVolume');
+        } finally {
+            process.env.PROJECT_REPO_ADAPTER = previousAdapter;
+        }
     });
 });

@@ -5,6 +5,7 @@ const taskRepository = require(path.resolve(__dirname, '../../../src/repositorie
 const sprintRepository = require(path.resolve(__dirname, '../../../src/repositories/sprintRepository'));
 const roleBindingRepository = require(path.resolve(__dirname, '../../../src/repositories/roleBindingRepository'));
 const activityService = require(path.resolve(__dirname, '../../../src/services/projectActivityFeedService'));
+const analyticsService = require(path.resolve(__dirname, '../../../src/services/analyticsService'));
 const { ProjectRole, isValidProjectRole } = require(path.resolve(__dirname, '../../../src/domain/projectRole'));
 const workspaceService = require(path.resolve(__dirname, '../../../src/domain/workspace/workspaceService'));
 const { resolveWorkspaceId } = require(path.resolve(__dirname, '../../../src/domain/workspace/workspaceContext'));
@@ -59,6 +60,24 @@ async function getProjectDashboardView(projectId, options = {}) {
         members,
         workspaceId
     };
+}
+
+async function getAnalyticsOverviewForGuild(guildId, options = {}) {
+    if (!guildId) {
+        return {
+            workspaceId: '',
+            activeProjects: 0,
+            openTasks: 0,
+            completedTasks: 0,
+            activityVolume: 0
+        };
+    }
+
+    return analyticsService.getAnalyticsOverview({
+        guildId,
+        userId: options.userId,
+        workspaceId: options.workspaceId
+    });
 }
 
 function listRoleBindingsForGuild(guildId) {
@@ -122,6 +141,7 @@ async function updateProjectMemberRole({ actorUserId, projectId, targetUserId, t
 module.exports = {
     listProjectsForGuild,
     getProjectDashboardView,
+    getAnalyticsOverviewForGuild,
     listRoleBindingsForGuild,
     updateRoleBinding,
     deleteRoleBinding,

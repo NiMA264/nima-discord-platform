@@ -14,6 +14,7 @@ const { createApiClient } = require('./lib/apiClient');
 const {
     listProjectsForGuild,
     getProjectDashboardView,
+    getAnalyticsOverviewForGuild,
     listRoleBindingsForGuild,
     updateRoleBinding,
     updateProjectMemberRole,
@@ -190,6 +191,20 @@ function createDashboardServer() {
         }
     });
 
+    app.get('/api/analytics/overview', requireAuth, async (req, res) => {
+        try {
+            const guildId = String(req.query.guildId || '');
+            const workspaceId = String(req.query.workspaceId || '');
+            const overview = await getAnalyticsOverviewForGuild(guildId, {
+                userId: req.session.user?.id,
+                workspaceId
+            });
+            res.json({ overview });
+        } catch (err) {
+            res.status(500).json({ error: `Analytics overview failed: ${err.message}` });
+        }
+    });
+
     app.get('/api/guilds/:guildId/role-bindings', requireAuth, async (req, res) => {
         try {
             const guildId = String(req.params.guildId || '');
@@ -271,9 +286,10 @@ function createDashboardServer() {
         const workspaceQuery = workspaceId ? `?workspaceId=${encodeURIComponent(workspaceId)}` : '';
 
         try {
-            const [{ projects }, { roleBindings }] = await Promise.all([
+            const [{ projects }, { roleBindings }, { overview }] = await Promise.all([
                 apiClient.getProjects(req.session.accessToken, guildId, workspaceId),
-                apiClient.getRoleBindings(req.session.accessToken, guildId)
+                apiClient.getRoleBindings(req.session.accessToken, guildId),
+                apiClient.getAnalyticsOverview(req.session.accessToken, guildId, workspaceId)
             ]);
 
             const rows = projects.length
@@ -306,6 +322,13 @@ function createDashboardServer() {
                 flash,
                 '<p><a href="/app">Back to servers</a></p>',
                 rows,
+                '</div>',
+                '<div class="card">',
+                '<h2>Analytics Overview</h2>',
+                `<div class="item"><strong>activeProjects</strong> ${overview.activeProjects}</div>`,
+                `<div class="item"><strong>openTasks</strong> ${overview.openTasks}</div>`,
+                `<div class="item"><strong>completedTasks</strong> ${overview.completedTasks}</div>`,
+                `<div class="item"><strong>activityVolume</strong> ${overview.activityVolume}</div>`,
                 '</div>',
                 '<div class="card">',
                 '<h2>Guild Role Bindings</h2>',

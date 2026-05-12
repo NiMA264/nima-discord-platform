@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: NiMa Public API
   version: 1.0.0
-  description: Public API v1 scaffold for projects, tasks, and activity.
+  description: Public API v1 scaffold for projects, tasks, activity, and analytics overview.
 servers:
   - url: http://localhost:8790
 paths:
@@ -153,6 +153,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AcceptedResponse'
+  /v1/analytics/overview:
+    get:
+      summary: Workspace-scoped analytics overview
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: guildId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: workspaceId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Analytics overview response
+          content:
+            application/json:
+              schema:
+                type: object
 components:
   securitySchemes:
     bearerAuth:

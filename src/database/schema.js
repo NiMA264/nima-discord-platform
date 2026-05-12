@@ -106,6 +106,10 @@
         UNIQUE(workspace_id, user_id)
     );`,
     `CREATE INDEX IF NOT EXISTS idx_workspace_memberships_workspace ON workspace_memberships (workspace_id, role);`,
+    `CREATE TABLE IF NOT EXISTS workspace_settings (
+        workspace_id TEXT PRIMARY KEY,
+        digest_channel_id TEXT
+    );`,
     `CREATE TABLE IF NOT EXISTS tasks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         task_uid TEXT NOT NULL UNIQUE,

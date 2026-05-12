@@ -29,6 +29,7 @@ describe('workflow digest foundation', () => {
 
     it('runs once per day and logs non-empty workspace digests', async () => {
         const log = vi.fn();
+        const deliver = vi.fn(async () => ({ delivered: true }));
         const getSuggestions = vi.fn(async ({ workspaceId }) => {
             if (workspaceId === 'ws-a') return { workspaceId, suggestions: [] };
             return {
@@ -44,18 +45,21 @@ describe('workflow digest foundation', () => {
             now: new Date('2026-05-12T08:00:00.000Z'),
             resolveWorkspaces: () => ['ws-a', 'ws-b'],
             getSuggestions,
-            log
+            log,
+            deliver
         });
         const second = await workflowDigestWorker.runWorkflowDigestCycleForGuild({ id: 'guild-b' }, {
             now: new Date('2026-05-12T20:00:00.000Z'),
             resolveWorkspaces: () => ['ws-a', 'ws-b'],
             getSuggestions,
-            log
+            log,
+            deliver
         });
 
         expect(first).toBe(1);
         expect(second).toBe(0);
         expect(log).toHaveBeenCalledTimes(1);
+        expect(deliver).toHaveBeenCalledTimes(1);
         expect(log.mock.calls[0][0]).toContain('workspace=ws-b');
         expect(log.mock.calls[0][0]).toContain('totalSuggestions=2');
     });

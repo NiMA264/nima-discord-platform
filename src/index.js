@@ -19,6 +19,7 @@ const {
     createDiscordNotificationAdapter,
     setDiscordNotificationClient
 } = require('./integrations/notifications/discordNotificationDeliveryAdapter');
+const { setDiscordDigestDeliveryClient } = require('./services/discordDigestDeliveryService');
 
 const client = new Client({
     intents: [
@@ -88,6 +89,7 @@ function initializePersistenceLayer() {
 
 function initializeNotificationLayer() {
     setDiscordNotificationClient(client);
+    setDiscordDigestDeliveryClient(client);
     registerNotificationAdapter(createDiscordNotificationAdapter());
     info('Notification layer ready');
 }

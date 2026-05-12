@@ -1,6 +1,7 @@
 const workspaceService = require('../domain/workspace/workspaceService');
 const aiWorkflowSuggestionService = require('../services/aiWorkflowSuggestionService');
 const { buildWorkspaceDigest, formatWorkspaceDigestLog } = require('../services/workflowDigestService');
+const { deliverWorkspaceDigest } = require('../services/discordDigestDeliveryService');
 const { scoped } = require('../utils/logger');
 const { handleWorkerError } = require('../lib/handleWorkerError');
 const metrics = require('../lib/metrics');
@@ -30,6 +31,7 @@ async function runWorkflowDigestCycleForGuild(guild, options = {}) {
     const now = options.now || new Date();
     const resolveWorkspaces = options.resolveWorkspaces || (() => workspaceService.listWorkspaces().map(item => item.workspaceId));
     const getSuggestions = options.getSuggestions || aiWorkflowSuggestionService.getWorkflowSuggestions;
+    const deliver = options.deliver || deliverWorkspaceDigest;
     const log = options.log || (message => digestLogger.info('Workflow digest summary', { guildId, message, generatedAt: now.toISOString() }));
 
     if (!shouldRunDaily(guildId, now)) return 0;
@@ -51,7 +53,12 @@ async function runWorkflowDigestCycleForGuild(guild, options = {}) {
             if (digest.totalSuggestions === 0) continue;
 
             log(formatWorkspaceDigestLog(digest));
-            emitted += 1;
+            const deliveryResult = await deliver({
+                guildId,
+                workspaceId: digest.workspaceId,
+                digest
+            });
+            if (deliveryResult?.delivered) emitted += 1;
         } catch (err) {
             handleWorkerError('workflowDigestWorker', err, { guildId, workspaceId });
             metrics.increment('worker_failure_total', 1, { worker: 'workflowDigestWorker' });

@@ -4,6 +4,7 @@
     triggerChannels: ['coding-general'],
     maxContextMessages: 14,
     memoryRetentionDays: 14,
+    optimizePromptVersion: 'v1.0.0',
     rateLimitWindowMs: 60000,
     rateLimitPerUser: 8,
     fallbackResponse: [

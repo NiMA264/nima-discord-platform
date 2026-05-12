@@ -1,0 +1,53 @@
+{
+  "version": "v1",
+  "events": {
+    "github.push": {
+      "entityType": "repository",
+      "requiredMetadata": [
+        "deliveryId",
+        "repositoryFullName",
+        "sender",
+        "ref",
+        "url"
+      ],
+      "optionalMetadata": [
+        "action",
+        "pullRequestNumber",
+        "issueNumber"
+      ],
+      "notes": "Created from GitHub push webhook events."
+    },
+    "github.pull_request.opened": {
+      "entityType": "repository",
+      "requiredMetadata": [
+        "deliveryId",
+        "repositoryFullName",
+        "sender",
+        "action",
+        "pullRequestNumber",
+        "url"
+      ],
+      "optionalMetadata": [
+        "ref",
+        "issueNumber"
+      ],
+      "notes": "Created from pull_request webhook events where action is opened."
+    },
+    "github.issue.opened": {
+      "entityType": "repository",
+      "requiredMetadata": [
+        "deliveryId",
+        "repositoryFullName",
+        "sender",
+        "action",
+        "issueNumber",
+        "url"
+      ],
+      "optionalMetadata": [
+        "ref",
+        "pullRequestNumber"
+      ],
+      "notes": "Created from issues webhook events where action is opened."
+    }
+  }
+}

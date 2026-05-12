@@ -35,6 +35,12 @@
     `CREATE INDEX IF NOT EXISTS idx_ai_memory_context ON ai_memory (guild_id, channel_id, created_at);`,
     `CREATE TABLE IF NOT EXISTS projects (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_uid TEXT,
+        slug TEXT,
+        repo_url TEXT,
+        github_repo_id TEXT,
+        forum_channel_id TEXT,
+        workspace_id TEXT NOT NULL DEFAULT 'default-workspace',
         guild_id TEXT NOT NULL,
         thread_id TEXT NOT NULL,
         creator_id TEXT NOT NULL,

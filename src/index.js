@@ -12,6 +12,7 @@ const { startGithubWebhookServer } = require('./integrations/github/githubWebhoo
 const { startGithubEventWorker } = require('./workers/githubEventWorker');
 const { startScheduledDigestWorker } = require('./workers/digestWorker');
 const { startInactivityDetectionWorker } = require('./workers/inactivityDetectionWorker');
+const { startWorkflowDigestWorker } = require('./workers/workflowDigestWorker');
 const { startPublicApiServer } = require('./api/v1/server');
 const { registerNotificationAdapter } = require('./services/notificationService');
 const {
@@ -94,6 +95,7 @@ function initializeNotificationLayer() {
 function initializeAutomationLayer() {
     startScheduledDigestWorker(client);
     startInactivityDetectionWorker(client);
+    startWorkflowDigestWorker(client);
     info('Automation layer ready');
 }
 

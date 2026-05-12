@@ -62,7 +62,7 @@ describe('domain event foundation', () => {
 
         expect(eventTypes).toContain('project.created');
         expect(eventTypes).toContain('task.created');
-        expect(eventTypes).toContain('task.completed');
+        expect(eventTypes).toContain('task.status_changed');
         expect(eventTypes).toContain('project.log_added');
     });
 });

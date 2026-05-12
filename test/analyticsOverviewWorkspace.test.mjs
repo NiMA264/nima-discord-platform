@@ -44,7 +44,15 @@ describe('analytics overview workspace scope', () => {
             workspaceId: wsB,
             projectUid: projectB,
             title: 'Open Task',
-            status: 'TODO',
+            status: 'open',
+            createdBy: 'b'
+        });
+        await taskRepo.createTask({
+            taskUid: `task-progress-${Date.now()}`,
+            workspaceId: wsB,
+            projectUid: projectB,
+            title: 'In Progress Task',
+            status: 'in_progress',
             createdBy: 'b'
         });
         await taskRepo.createTask({
@@ -52,7 +60,7 @@ describe('analytics overview workspace scope', () => {
             workspaceId: wsB,
             projectUid: projectB,
             title: 'Done Task',
-            status: 'DONE',
+            status: 'done',
             createdBy: 'b'
         });
 
@@ -80,7 +88,9 @@ describe('analytics overview workspace scope', () => {
         expect(result.workspaceId).toBe(wsB);
         expect(result.activeProjects).toBe(1);
         expect(result.openTasks).toBe(1);
+        expect(result.inProgressTasks).toBe(1);
         expect(result.completedTasks).toBe(1);
+        expect(result.completionRate).toBeCloseTo(1 / 3, 4);
         expect(result.activityVolume).toBe(2);
     });
 });

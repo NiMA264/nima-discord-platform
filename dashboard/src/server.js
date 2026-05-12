@@ -41,6 +41,10 @@ function renderLayout({ title, body, user }) {
     .guild:last-child, .item:last-child { border-bottom:none; }
     .meta { color: #aab6df; font-size: 12px; }
     .row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; margin-left:8px; }
+    .badge-open { background:#153b2d; color:#8ef5c6; }
+    .badge-progress { background:#3a2d14; color:#ffd98a; }
+    .badge-done { background:#1c2b52; color:#9dc1ff; }
     .flash-ok { color:#6ee7b7; }
     .flash-error { color:#fca5a5; }
     input, select, button { padding: 6px 8px; margin-right:8px; }
@@ -86,6 +90,13 @@ function flashFromQuery(query) {
     if (!message) return '';
     const klass = type === 'ok' ? 'flash-ok' : 'flash-error';
     return `<p class="${klass}">${message}</p>`;
+}
+
+function taskStatusBadge(status) {
+    const value = String(status || '').trim().toLowerCase();
+    if (value === 'done') return '<span class="badge badge-done">done</span>';
+    if (value === 'in_progress') return '<span class="badge badge-progress">in_progress</span>';
+    return '<span class="badge badge-open">open</span>';
 }
 
 function createDashboardServer() {
@@ -327,7 +338,9 @@ function createDashboardServer() {
                 '<h2>Analytics Overview</h2>',
                 `<div class="item"><strong>activeProjects</strong> ${overview.activeProjects}</div>`,
                 `<div class="item"><strong>openTasks</strong> ${overview.openTasks}</div>`,
+                `<div class="item"><strong>inProgressTasks</strong> ${overview.inProgressTasks}</div>`,
                 `<div class="item"><strong>completedTasks</strong> ${overview.completedTasks}</div>`,
+                `<div class="item"><strong>completionRate</strong> ${(Number(overview.completionRate || 0) * 100).toFixed(1)}%</div>`,
                 `<div class="item"><strong>activityVolume</strong> ${overview.activityVolume}</div>`,
                 '</div>',
                 '<div class="card">',
@@ -379,7 +392,7 @@ function createDashboardServer() {
                 : '<div>No activity yet.</div>';
 
             const taskRows = detail.tasks.length
-                ? detail.tasks.map(task => `<div class="item"><strong>${task.title}</strong><div class="meta">${task.task_uid} | status=${task.status}</div></div>`).join('')
+                ? detail.tasks.map(task => `<div class="item"><strong>${task.title}</strong>${taskStatusBadge(task.status)}<div class="meta">${task.task_uid} | status=${task.status}</div></div>`).join('')
                 : '<div>No tasks yet.</div>';
 
             const sprintRows = detail.sprints.length

@@ -2,7 +2,7 @@ const {
     createTaskEntity,
     findTaskByUid,
     assignTask: assignTaskRepository,
-    closeTask: closeTaskRepository
+    updateTaskStatus: updateTaskStatusRepository
 } = require('../repositories/taskRepository');
 const { createProjectLog, findProjectByUid } = require('../repositories/projectRepository');
 const { notifyDomainEvent } = require('./notificationService');
@@ -67,34 +67,49 @@ async function assignTask({ taskId, userId, actorId }) {
 }
 
 async function closeTask({ taskId, actorId }) {
+    return updateTaskStatus({ taskId, status: 'done', actorId });
+}
+
+async function updateTaskStatus({ taskId, status, actorId, workspaceId }) {
     const task = await findTaskByUid(taskId);
     if (!task) return null;
+    if (workspaceId && task.workspace_id !== workspaceId) return null;
 
-    await closeTaskRepository(taskId);
+    const previousStatus = String(task.status || '').trim().toLowerCase();
+    await updateTaskStatusRepository(taskId, status, task.workspace_id);
     await createProjectLog({
         projectUid: task.project_uid,
         source: 'SYSTEM',
-        eventType: 'task.closed',
-        content: { taskId, actorId },
+        eventType: 'task.status_changed',
+        content: {
+            taskId,
+            actorId,
+            previousStatus,
+            nextStatus: String(status || '').trim().toLowerCase()
+        },
         workspaceId: task.workspace_id
     });
     recordDomainEvent({
         workspaceId: task.workspace_id,
-        type: 'task.completed',
+        type: 'task.status_changed',
         entityType: 'task',
         entityId: taskId,
         metadata: {
             projectId: task.project_uid,
+            previousStatus,
+            nextStatus: String(status || '').trim().toLowerCase(),
             actorId
         }
     });
 
     const updated = await findTaskByUid(taskId);
 
-    await notifyDomainEvent('task.closed', {
+    await notifyDomainEvent('task.status_changed', {
         projectId: task.project_uid,
         taskId: updated?.task_uid || taskId,
         taskTitle: updated?.title || task.title,
+        previousStatus,
+        nextStatus: updated?.status || String(status || '').trim().toLowerCase(),
         actorId
     });
 
@@ -104,5 +119,6 @@ async function closeTask({ taskId, actorId }) {
 module.exports = {
     createTask,
     assignTask,
-    closeTask
+    closeTask,
+    updateTaskStatus
 };

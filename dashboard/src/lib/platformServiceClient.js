@@ -68,7 +68,9 @@ async function getAnalyticsOverviewForGuild(guildId, options = {}) {
             workspaceId: '',
             activeProjects: 0,
             openTasks: 0,
+            inProgressTasks: 0,
             completedTasks: 0,
+            completionRate: 0,
             activityVolume: 0
         };
     }

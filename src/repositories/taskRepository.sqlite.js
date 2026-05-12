@@ -21,10 +21,22 @@ const statements = {
     assignTask: db.prepare(`
         UPDATE tasks SET assigned_to = ? WHERE task_uid = ?
     `),
+    updateTaskStatus: db.prepare(`
+        UPDATE tasks SET status = ?, closed_at = ? WHERE task_uid = ?
+    `),
     closeTask: db.prepare(`
-        UPDATE tasks SET status = 'DONE', closed_at = ? WHERE task_uid = ?
+        UPDATE tasks SET status = 'done', closed_at = ? WHERE task_uid = ?
     `)
 };
+
+function normalizeTaskStatus(status) {
+    const value = String(status || '').trim().toLowerCase();
+    if (value === 'todo') return 'open';
+    if (value === 'doing') return 'in_progress';
+    if (value === 'done' || value === 'completed' || value === 'closed') return 'done';
+    if (value === 'open' || value === 'in_progress') return value;
+    return 'open';
+}
 
 async function createTask(data) {
     const workspaceId = resolveWorkspaceId({ explicitWorkspaceId: data.workspaceId });
@@ -34,7 +46,7 @@ async function createTask(data) {
         data.projectUid,
         data.title,
         data.description || null,
-        data.status || 'TODO',
+        normalizeTaskStatus(data.status || 'open'),
         data.assignedTo || null,
         data.createdBy,
         data.createdAt || new Date().toISOString()
@@ -54,8 +66,14 @@ async function assignTask(taskUid, assignedTo) {
     return statements.assignTask.run(assignedTo, taskUid);
 }
 
+async function updateTaskStatus(taskUid, status) {
+    const normalized = normalizeTaskStatus(status);
+    const closedAt = normalized === 'done' ? new Date().toISOString() : null;
+    return statements.updateTaskStatus.run(normalized, closedAt, taskUid);
+}
+
 async function closeTask(taskUid) {
-    return statements.closeTask.run(new Date().toISOString(), taskUid);
+    return updateTaskStatus(taskUid, 'done');
 }
 
 module.exports = {
@@ -63,5 +81,6 @@ module.exports = {
     findTaskByUid,
     listTasksByProject,
     assignTask,
+    updateTaskStatus,
     closeTask
 };

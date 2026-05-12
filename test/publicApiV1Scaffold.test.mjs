@@ -76,7 +76,9 @@ describe('public api v1 scaffold', () => {
             expect(response.body).toHaveProperty('meta.placeholder', false);
             expect(response.body.data).toHaveProperty('activeProjects');
             expect(response.body.data).toHaveProperty('openTasks');
+            expect(response.body.data).toHaveProperty('inProgressTasks');
             expect(response.body.data).toHaveProperty('completedTasks');
+            expect(response.body.data).toHaveProperty('completionRate');
             expect(response.body.data).toHaveProperty('activityVolume');
         } finally {
             process.env.PROJECT_REPO_ADAPTER = previousAdapter;

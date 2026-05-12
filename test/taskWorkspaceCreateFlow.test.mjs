@@ -46,5 +46,24 @@ describe('task create workspace flow', () => {
         expect(createdTask).toBeTruthy();
         expect(createdTask.project_uid).toBe(projectB);
         expect(createdTask.workspace_id).toBe(wsB);
+        expect(createdTask.status).toBe('open');
+
+        const progressedTask = await taskService.updateTaskStatus({
+            taskId: createdTask.task_uid,
+            status: 'in_progress',
+            actorId: 'u-b',
+            workspaceId: wsB
+        });
+        expect(progressedTask).toBeTruthy();
+        expect(progressedTask.status).toBe('in_progress');
+
+        const doneTask = await taskService.updateTaskStatus({
+            taskId: createdTask.task_uid,
+            status: 'done',
+            actorId: 'u-b',
+            workspaceId: wsB
+        });
+        expect(doneTask).toBeTruthy();
+        expect(doneTask.status).toBe('done');
     });
 });

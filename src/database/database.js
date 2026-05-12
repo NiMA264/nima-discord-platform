@@ -92,6 +92,18 @@ function initializeDatabase() {
             SET workspace_id = 'default-workspace'
             WHERE workspace_id IS NULL OR trim(workspace_id) = ''
         `).run();
+        dbInstance.prepare(`
+            UPDATE tasks
+            SET status = CASE
+                WHEN lower(trim(status)) IN ('todo', 'open') THEN 'open'
+                WHEN lower(trim(status)) IN ('in_progress', 'doing') THEN 'in_progress'
+                WHEN lower(trim(status)) IN ('done', 'completed', 'closed') THEN 'done'
+                ELSE 'open'
+            END
+            WHERE status IS NULL
+               OR trim(status) = ''
+               OR lower(trim(status)) IN ('todo', 'open', 'in_progress', 'doing', 'done', 'completed', 'closed')
+        `).run();
 
         const upsertSchemaVersion = dbInstance.prepare(`
             INSERT INTO db_meta (key, value)

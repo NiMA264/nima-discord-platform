@@ -40,7 +40,10 @@ function findStaleActiveSprints(sprints, nowTs, staleMs) {
 
 function findUnassignedOpenTasks(tasks, nowTs, staleMs) {
     return tasks
-        .filter(t => String(t.status || '').toUpperCase() !== 'DONE')
+        .filter(t => {
+            const status = String(t.status || '').trim().toLowerCase();
+            return !['done', 'completed', 'closed'].includes(status);
+        })
         .filter(t => !t.assigned_to)
         .filter(t => (nowTs - toTimestamp(t.created_at)) >= staleMs);
 }

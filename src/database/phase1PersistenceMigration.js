@@ -61,7 +61,7 @@ const statements = [
         project_uid TEXT NOT NULL,
         title TEXT NOT NULL,
         description TEXT,
-        status TEXT NOT NULL DEFAULT 'TODO',
+        status TEXT NOT NULL DEFAULT 'open',
         assigned_to TEXT,
         created_by TEXT NOT NULL,
         created_at TEXT NOT NULL,
@@ -159,6 +159,18 @@ function ensurePhase1Persistence() {
         UPDATE tasks
         SET workspace_id = 'default-workspace'
         WHERE workspace_id IS NULL OR trim(workspace_id) = ''
+    `).run();
+    db.prepare(`
+        UPDATE tasks
+        SET status = CASE
+            WHEN lower(trim(status)) IN ('todo', 'open') THEN 'open'
+            WHEN lower(trim(status)) IN ('in_progress', 'doing') THEN 'in_progress'
+            WHEN lower(trim(status)) IN ('done', 'completed', 'closed') THEN 'done'
+            ELSE 'open'
+        END
+        WHERE status IS NULL
+           OR trim(status) = ''
+           OR lower(trim(status)) IN ('todo', 'open', 'in_progress', 'doing', 'done', 'completed', 'closed')
     `).run();
 }
 

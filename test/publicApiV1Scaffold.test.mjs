@@ -5,6 +5,7 @@ import tasksRoute from '../src/api/v1/routes/tasks.js';
 import activityRoute from '../src/api/v1/routes/activity.js';
 import workspacesRoute from '../src/api/v1/routes/workspaces.js';
 import analyticsRoute from '../src/api/v1/routes/analytics.js';
+import activityInsightsRoute from '../src/api/v1/routes/activityInsights.js';
 
 const { authenticateApiRequest } = authModule;
 
@@ -83,5 +84,25 @@ describe('public api v1 scaffold', () => {
         } finally {
             process.env.PROJECT_REPO_ADAPTER = previousAdapter;
         }
+    });
+
+    it('activity insights route exposes stable v1 shape', async () => {
+        const context = { authMode: 'disabled' };
+        const response = await activityInsightsRoute.getActivityInsights({
+            query: {
+                guildId: `guild-${Date.now()}`,
+                workspaceId: ''
+            }
+        }, {}, context);
+
+        expect(response.statusCode).toBe(200);
+        expect(response.body).toHaveProperty('ok', true);
+        expect(response.body).toHaveProperty('meta.resource', 'activityInsights');
+        expect(response.body).toHaveProperty('meta.version', 'v1');
+        expect(response.body.data).toHaveProperty('workspaceId');
+        expect(response.body.data).toHaveProperty('recentEvents');
+        expect(response.body.data).toHaveProperty('topActiveProjects');
+        expect(response.body.data).toHaveProperty('recentAssignments');
+        expect(response.body.data).toHaveProperty('recentStatusChanges');
     });
 });

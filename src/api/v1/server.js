@@ -7,6 +7,7 @@ const tasksRoute = require('./routes/tasks');
 const activityRoute = require('./routes/activity');
 const workspacesRoute = require('./routes/workspaces');
 const analyticsRoute = require('./routes/analytics');
+const activityInsightsRoute = require('./routes/activityInsights');
 
 function sendJson(res, statusCode, payload) {
     res.statusCode = statusCode;
@@ -36,6 +37,7 @@ function resolveHandler(method, pathname) {
     if (pathname === '/v1/activity' && method === 'GET') return { handler: activityRoute.getActivity, params: {} };
     if (pathname === '/v1/activity' && method === 'POST') return { handler: activityRoute.postActivity, params: {} };
     if (pathname === '/v1/analytics/overview' && method === 'GET') return { handler: analyticsRoute.getAnalyticsOverview, params: {} };
+    if (pathname === '/v1/analytics/activity' && method === 'GET') return { handler: activityInsightsRoute.getActivityInsights, params: {} };
     return null;
 }
 

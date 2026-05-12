@@ -231,7 +231,14 @@
         created_at TEXT NOT NULL
     );`,
     `CREATE INDEX IF NOT EXISTS idx_domain_events_workspace_created ON domain_events (workspace_id, created_at DESC);`,
-    `CREATE INDEX IF NOT EXISTS idx_domain_events_type_created ON domain_events (type, created_at DESC);`
+    `CREATE INDEX IF NOT EXISTS idx_domain_events_type_created ON domain_events (type, created_at DESC);`,
+    `CREATE TABLE IF NOT EXISTS github_repository_mappings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        repository_full_name TEXT NOT NULL UNIQUE,
+        workspace_id TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    );`,
+    `CREATE INDEX IF NOT EXISTS idx_github_repository_mappings_workspace ON github_repository_mappings (workspace_id);`
 ];
 
 module.exports = { schemaStatements };

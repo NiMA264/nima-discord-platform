@@ -1,5 +1,5 @@
 const http = require('http');
-const { ingestGithubWebhook } = require('./githubWebhookIngest');
+const { handleGithubWebhook } = require('../../api/github/webhook');
 const { info, warn } = require('../../utils/logger');
 const { handleWorkerError } = require('../../lib/handleWorkerError');
 
@@ -22,15 +22,15 @@ function startGithubWebhookServer() {
             try {
                 const rawBody = Buffer.concat(chunks).toString('utf8');
                 const body = rawBody ? JSON.parse(rawBody) : {};
-                const result = await ingestGithubWebhook({
+                const response = await handleGithubWebhook({
                     headers: req.headers,
                     rawBody,
                     body
                 });
 
-                res.statusCode = result.statusCode;
+                res.statusCode = response.statusCode;
                 res.setHeader('content-type', 'application/json');
-                res.end(JSON.stringify({ ok: result.ok, message: result.message }));
+                res.end(JSON.stringify(response.body));
             } catch (err) {
                 handleWorkerError('githubWebhookServer', err);
                 res.statusCode = 500;

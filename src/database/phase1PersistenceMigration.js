@@ -97,7 +97,14 @@ const statements = [
         created_at TEXT NOT NULL,
         processed_at TEXT
     );`,
-    `CREATE INDEX IF NOT EXISTS idx_github_webhook_events_status ON github_webhook_events (status, created_at);`
+    `CREATE INDEX IF NOT EXISTS idx_github_webhook_events_status ON github_webhook_events (status, created_at);`,
+    `CREATE TABLE IF NOT EXISTS github_repository_mappings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        repository_full_name TEXT NOT NULL UNIQUE,
+        workspace_id TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    );`,
+    `CREATE INDEX IF NOT EXISTS idx_github_repository_mappings_workspace ON github_repository_mappings (workspace_id);`
 ];
 
 function hasColumn(db, table, column) {

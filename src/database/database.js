@@ -5,7 +5,7 @@ const { schemaStatements } = require('./schema');
 const { dbInfo, dbWarn, dbError } = require('../utils/logger');
 
 let dbInstance;
-const SCHEMA_VERSION = '8';
+const SCHEMA_VERSION = '9';
 
 function hasColumn(db, table, column) {
     const columns = db.prepare(`PRAGMA table_info(${table})`).all();

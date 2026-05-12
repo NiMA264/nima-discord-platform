@@ -1,9 +1,15 @@
 # Analytics Projections
 
-This directory is reserved for analytics projection modules.
+This directory contains pure projection modules for analytics read models.
 
-Current status:
+Architecture rule:
 
-- Structure is intentionally prepared without moving existing logic.
-- Existing repositories/services remain source-compatible.
-- New projections should consume persisted `domain_events` only.
+Projection runtime reads persisted `domain_events` and produces rebuildable read-model state.
+It does not perform external API calls, writes, polling, or side effects.
+
+Constraints:
+
+- Projection functions are pure: `(state, event) => nextState`.
+- Projection logic is idempotent and side-effect free.
+- Runtime processes events in deterministic order.
+- Unknown event types are skipped or collected and must not crash runtime.

@@ -41,17 +41,35 @@ async function createTask({ projectId, title, description, actorId, workspaceId 
     return findTaskByUid(taskId);
 }
 
-async function assignTask({ taskId, userId, actorId }) {
+async function assignTask({ taskId, assigneeUserId, userId, actorId, workspaceId }) {
     const task = await findTaskByUid(taskId);
     if (!task) return null;
+    if (workspaceId && task.workspace_id !== workspaceId) return null;
+    const nextAssigneeUserId = String(assigneeUserId || userId || '').trim();
+    if (!nextAssigneeUserId) return null;
 
-    await assignTaskRepository(taskId, userId);
+    await assignTaskRepository(taskId, nextAssigneeUserId);
     await createProjectLog({
         projectUid: task.project_uid,
         source: 'SYSTEM',
         eventType: 'task.assigned',
-        content: { taskId, userId, actorId },
+        content: {
+            taskId,
+            assigneeUserId: nextAssigneeUserId,
+            actorId
+        },
         workspaceId: task.workspace_id
+    });
+    recordDomainEvent({
+        workspaceId: task.workspace_id,
+        type: 'task.assigned',
+        entityType: 'task',
+        entityId: taskId,
+        metadata: {
+            projectId: task.project_uid,
+            assigneeUserId: nextAssigneeUserId,
+            actorId
+        }
     });
     const updated = await findTaskByUid(taskId);
 
@@ -59,7 +77,7 @@ async function assignTask({ taskId, userId, actorId }) {
         projectId: task.project_uid,
         taskId: updated?.task_uid || taskId,
         taskTitle: updated?.title || task.title,
-        assigneeUserId: userId,
+        assigneeUserId: nextAssigneeUserId,
         actorId
     });
 

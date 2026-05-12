@@ -62,6 +62,7 @@ const statements = [
         title TEXT NOT NULL,
         description TEXT,
         status TEXT NOT NULL DEFAULT 'open',
+        assignee_user_id TEXT,
         assigned_to TEXT,
         created_by TEXT NOT NULL,
         created_at TEXT NOT NULL,
@@ -120,6 +121,7 @@ function ensurePhase1Persistence() {
     ensureColumn(db, 'projects', 'workspace_id', `workspace_id TEXT NOT NULL DEFAULT 'default-workspace'`);
     ensureColumn(db, 'project_logs', 'workspace_id', `workspace_id TEXT NOT NULL DEFAULT 'default-workspace'`);
     ensureColumn(db, 'tasks', 'workspace_id', `workspace_id TEXT NOT NULL DEFAULT 'default-workspace'`);
+    ensureColumn(db, 'tasks', 'assignee_user_id', 'assignee_user_id TEXT');
     ensureColumn(db, 'guild_settings', 'welcome_channel_id', 'welcome_channel_id TEXT');
     ensureColumn(db, 'guild_settings', 'bot_channel_id', 'bot_channel_id TEXT');
     ensureColumn(db, 'guild_settings', 'help_channel_id', 'help_channel_id TEXT');
@@ -159,6 +161,13 @@ function ensurePhase1Persistence() {
         UPDATE tasks
         SET workspace_id = 'default-workspace'
         WHERE workspace_id IS NULL OR trim(workspace_id) = ''
+    `).run();
+    db.prepare(`
+        UPDATE tasks
+        SET assignee_user_id = assigned_to
+        WHERE (assignee_user_id IS NULL OR trim(assignee_user_id) = '')
+          AND assigned_to IS NOT NULL
+          AND trim(assigned_to) <> ''
     `).run();
     db.prepare(`
         UPDATE tasks

@@ -65,5 +65,22 @@ describe('task create workspace flow', () => {
         });
         expect(doneTask).toBeTruthy();
         expect(doneTask.status).toBe('done');
+
+        const assignmentFromWrongWorkspace = await taskService.assignTask({
+            taskId: createdTask.task_uid,
+            assigneeUserId: 'discord-user-wrong',
+            actorId: 'u-a',
+            workspaceId: wsA
+        });
+        expect(assignmentFromWrongWorkspace).toBeNull();
+
+        const assignedTask = await taskService.assignTask({
+            taskId: createdTask.task_uid,
+            assigneeUserId: 'discord-user-1',
+            actorId: 'u-b',
+            workspaceId: wsB
+        });
+        expect(assignedTask).toBeTruthy();
+        expect(assignedTask.assigneeUserId).toBe('discord-user-1');
     });
 });

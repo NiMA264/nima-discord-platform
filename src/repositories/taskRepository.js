@@ -11,6 +11,15 @@ function rowOrNull(rows) {
     return rows.length ? rows[0] : null;
 }
 
+function mapTaskRow(row) {
+    if (!row) return null;
+    const assigneeUserId = row.assigneeUserId || row.assignee_user_id || row.assigned_to || null;
+    return {
+        ...row,
+        assigneeUserId
+    };
+}
+
 function normalizeTaskStatus(status) {
     const value = String(status || '').trim().toLowerCase();
     if (value === 'todo') return 'open';
@@ -25,8 +34,8 @@ async function createTask(data) {
     const workspaceId = resolveWorkspaceId({ explicitWorkspaceId: data.workspaceId });
     const prisma = getPrisma();
     return prisma.$executeRaw`
-        INSERT INTO tasks (task_uid, workspace_id, project_uid, title, description, status, assigned_to, created_by, created_at)
-        VALUES (${data.taskUid}, ${workspaceId}, ${data.projectUid}, ${data.title}, ${data.description || null}, ${normalizeTaskStatus(data.status || 'open')}, ${data.assignedTo || null}, ${data.createdBy}, ${data.createdAt || new Date().toISOString()})
+        INSERT INTO tasks (task_uid, workspace_id, project_uid, title, description, status, assignee_user_id, assigned_to, created_by, created_at)
+        VALUES (${data.taskUid}, ${workspaceId}, ${data.projectUid}, ${data.title}, ${data.description || null}, ${normalizeTaskStatus(data.status || 'open')}, ${data.assigneeUserId || data.assignedTo || null}, ${data.assignedTo || null}, ${data.createdBy}, ${data.createdAt || new Date().toISOString()})
     `;
 }
 
@@ -39,25 +48,40 @@ async function createTaskEntity({ projectUid, title, description, createdBy, wor
 async function findTaskByUid(taskUid) {
     if (useFallback()) return sqliteAdapter.findTaskByUid(taskUid);
     const prisma = getPrisma();
-    const rows = await prisma.$queryRaw`SELECT * FROM tasks WHERE task_uid = ${taskUid} LIMIT 1`;
-    return rowOrNull(rows);
+    const rows = await prisma.$queryRaw`
+        SELECT
+            *,
+            COALESCE(assignee_user_id, assigned_to) AS assigneeUserId
+        FROM tasks
+        WHERE task_uid = ${taskUid}
+        LIMIT 1
+    `;
+    return mapTaskRow(rowOrNull(rows));
 }
 
 async function listTasksByProject(projectUid, limit = 50, workspaceIdInput) {
     if (useFallback()) return sqliteAdapter.listTasksByProject(projectUid, limit, workspaceIdInput);
     const workspaceId = resolveWorkspaceId({ explicitWorkspaceId: workspaceIdInput });
     const prisma = getPrisma();
-    return prisma.$queryRaw`
-        SELECT * FROM tasks
+    const rows = await prisma.$queryRaw`
+        SELECT
+            *,
+            COALESCE(assignee_user_id, assigned_to) AS assigneeUserId
+        FROM tasks
         WHERE project_uid = ${projectUid} AND workspace_id = ${workspaceId}
         ORDER BY created_at DESC LIMIT ${limit}
     `;
+    return rows.map(mapTaskRow);
 }
 
 async function assignTask(taskUid, assignedTo) {
     if (useFallback()) return sqliteAdapter.assignTask(taskUid, assignedTo);
     const prisma = getPrisma();
-    return prisma.$executeRaw`UPDATE tasks SET assigned_to = ${assignedTo} WHERE task_uid = ${taskUid}`;
+    return prisma.$executeRaw`
+        UPDATE tasks
+        SET assignee_user_id = ${assignedTo}, assigned_to = ${assignedTo}
+        WHERE task_uid = ${taskUid}
+    `;
 }
 
 async function updateTaskStatus(taskUid, status, workspaceIdInput) {

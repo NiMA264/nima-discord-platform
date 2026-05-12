@@ -7,19 +7,26 @@ const db = getDatabase();
 
 const statements = {
     createTask: db.prepare(`
-        INSERT INTO tasks (task_uid, workspace_id, project_uid, title, description, status, assigned_to, created_by, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO tasks (task_uid, workspace_id, project_uid, title, description, status, assignee_user_id, assigned_to, created_by, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `),
     findByUid: db.prepare(`
-        SELECT * FROM tasks WHERE task_uid = ? LIMIT 1
+        SELECT
+            *,
+            COALESCE(assignee_user_id, assigned_to) AS assigneeUserId
+        FROM tasks
+        WHERE task_uid = ? LIMIT 1
     `),
     listByProject: db.prepare(`
-        SELECT * FROM tasks
+        SELECT
+            *,
+            COALESCE(assignee_user_id, assigned_to) AS assigneeUserId
+        FROM tasks
         WHERE project_uid = ? AND workspace_id = ?
         ORDER BY created_at DESC LIMIT ?
     `),
     assignTask: db.prepare(`
-        UPDATE tasks SET assigned_to = ? WHERE task_uid = ?
+        UPDATE tasks SET assignee_user_id = ?, assigned_to = ? WHERE task_uid = ?
     `),
     updateTaskStatus: db.prepare(`
         UPDATE tasks SET status = ?, closed_at = ? WHERE task_uid = ?
@@ -47,6 +54,7 @@ async function createTask(data) {
         data.title,
         data.description || null,
         normalizeTaskStatus(data.status || 'open'),
+        data.assigneeUserId || data.assignedTo || null,
         data.assignedTo || null,
         data.createdBy,
         data.createdAt || new Date().toISOString()
@@ -63,7 +71,7 @@ async function listTasksByProject(projectUid, limit = 50, workspaceIdInput) {
 }
 
 async function assignTask(taskUid, assignedTo) {
-    return statements.assignTask.run(assignedTo, taskUid);
+    return statements.assignTask.run(assignedTo, assignedTo, taskUid);
 }
 
 async function updateTaskStatus(taskUid, status) {

@@ -392,7 +392,7 @@ function createDashboardServer() {
                 : '<div>No activity yet.</div>';
 
             const taskRows = detail.tasks.length
-                ? detail.tasks.map(task => `<div class="item"><strong>${task.title}</strong>${taskStatusBadge(task.status)}<div class="meta">${task.task_uid} | status=${task.status}</div></div>`).join('')
+                ? detail.tasks.map(task => `<div class="item"><strong>${task.title}</strong>${taskStatusBadge(task.status)}<div class="meta">${task.task_uid} | status=${task.status} | assignee=${task.assigneeUserId || '-'}</div></div>`).join('')
                 : '<div>No tasks yet.</div>';
 
             const sprintRows = detail.sprints.length

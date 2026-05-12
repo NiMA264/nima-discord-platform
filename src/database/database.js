@@ -75,6 +75,7 @@ function initializeDatabase() {
         ensureColumn(dbInstance, 'projects', 'workspace_id', `workspace_id TEXT NOT NULL DEFAULT 'default-workspace'`);
         ensureColumn(dbInstance, 'project_logs', 'workspace_id', `workspace_id TEXT NOT NULL DEFAULT 'default-workspace'`);
         ensureColumn(dbInstance, 'tasks', 'workspace_id', `workspace_id TEXT NOT NULL DEFAULT 'default-workspace'`);
+        ensureColumn(dbInstance, 'tasks', 'assignee_user_id', 'assignee_user_id TEXT');
         ensureColumn(dbInstance, 'knowledge_entries', 'is_accepted_solution', 'is_accepted_solution INTEGER NOT NULL DEFAULT 0');
         ensureColumn(dbInstance, 'knowledge_entries', 'accepted_by', 'accepted_by TEXT');
         ensureColumn(dbInstance, 'knowledge_entries', 'accepted_at', 'accepted_at TEXT');
@@ -103,6 +104,13 @@ function initializeDatabase() {
             WHERE status IS NULL
                OR trim(status) = ''
                OR lower(trim(status)) IN ('todo', 'open', 'in_progress', 'doing', 'done', 'completed', 'closed')
+        `).run();
+        dbInstance.prepare(`
+            UPDATE tasks
+            SET assignee_user_id = assigned_to
+            WHERE (assignee_user_id IS NULL OR trim(assignee_user_id) = '')
+              AND assigned_to IS NOT NULL
+              AND trim(assigned_to) <> ''
         `).run();
 
         const upsertSchemaVersion = dbInstance.prepare(`

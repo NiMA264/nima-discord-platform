@@ -14,11 +14,15 @@ function buildDigestMessage(digest) {
         .map(item => `${item.key}: ${item.count}`)
         .join('\n');
 
-    return [
+    const lines = [
         `Workflow Digest (${digest.workspaceId})`,
         `Total suggestions: ${digest.totalSuggestions}`,
         topTypes ? `Top signals:\n${topTypes}` : 'Top signals: none'
-    ].join('\n');
+    ];
+    if (digest.aiSummary) {
+        lines.push(`AI summary: ${digest.aiSummary}`);
+    }
+    return lines.join('\n');
 }
 
 async function deliverWorkspaceDigest({ guildId, workspaceId, digest }) {

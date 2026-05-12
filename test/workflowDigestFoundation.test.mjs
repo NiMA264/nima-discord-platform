@@ -31,6 +31,7 @@ describe('workflow digest foundation', () => {
         const log = vi.fn();
         const deliverDiscord = vi.fn(async () => ({ delivered: false }));
         const deliverSlack = vi.fn(async () => ({ delivered: true }));
+        const generateSummary = vi.fn(async () => ({ usedAi: true, text: 'AI digest summary text.' }));
         const getSuggestions = vi.fn(async ({ workspaceId }) => {
             if (workspaceId === 'ws-a') return { workspaceId, suggestions: [] };
             return {
@@ -46,6 +47,7 @@ describe('workflow digest foundation', () => {
             now: new Date('2026-05-12T08:00:00.000Z'),
             resolveWorkspaces: () => ['ws-a', 'ws-b'],
             getSuggestions,
+            generateSummary,
             log,
             deliverDiscord,
             deliverSlack
@@ -54,6 +56,7 @@ describe('workflow digest foundation', () => {
             now: new Date('2026-05-12T20:00:00.000Z'),
             resolveWorkspaces: () => ['ws-a', 'ws-b'],
             getSuggestions,
+            generateSummary,
             log,
             deliverDiscord,
             deliverSlack
@@ -64,6 +67,8 @@ describe('workflow digest foundation', () => {
         expect(log).toHaveBeenCalledTimes(1);
         expect(deliverDiscord).toHaveBeenCalledTimes(1);
         expect(deliverSlack).toHaveBeenCalledTimes(1);
+        expect(generateSummary).toHaveBeenCalledTimes(1);
+        expect(deliverSlack.mock.calls[0][0].digest.aiSummary).toBe('AI digest summary text.');
         expect(log.mock.calls[0][0]).toContain('workspace=ws-b');
         expect(log.mock.calls[0][0]).toContain('totalSuggestions=2');
     });

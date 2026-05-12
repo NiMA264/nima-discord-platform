@@ -1,5 +1,6 @@
 const workspaceService = require('../domain/workspace/workspaceService');
 const aiWorkflowSuggestionService = require('../services/aiWorkflowSuggestionService');
+const { generateAiDigestSummary } = require('../services/aiDigestSummaryService');
 const { buildWorkspaceDigest, formatWorkspaceDigestLog } = require('../services/workflowDigestService');
 const { deliverWorkspaceDigest } = require('../services/discordDigestDeliveryService');
 const { deliverWorkspaceDigestToSlack } = require('../services/slackDigestDeliveryService');
@@ -32,6 +33,7 @@ async function runWorkflowDigestCycleForGuild(guild, options = {}) {
     const now = options.now || new Date();
     const resolveWorkspaces = options.resolveWorkspaces || (() => workspaceService.listWorkspaces().map(item => item.workspaceId));
     const getSuggestions = options.getSuggestions || aiWorkflowSuggestionService.getWorkflowSuggestions;
+    const generateSummary = options.generateSummary || generateAiDigestSummary;
     const deliverDiscord = options.deliverDiscord || deliverWorkspaceDigest;
     const deliverSlack = options.deliverSlack || deliverWorkspaceDigestToSlack;
     const log = options.log || (message => digestLogger.info('Workflow digest summary', { guildId, message, generatedAt: now.toISOString() }));
@@ -53,6 +55,10 @@ async function runWorkflowDigestCycleForGuild(guild, options = {}) {
                 suggestions: data.suggestions || []
             });
             if (digest.totalSuggestions === 0) continue;
+            const aiSummaryResult = await generateSummary(digest);
+            if (aiSummaryResult?.usedAi && aiSummaryResult.text) {
+                digest.aiSummary = aiSummaryResult.text;
+            }
 
             log(formatWorkspaceDigestLog(digest));
             const [discordResult, slackResult] = await Promise.all([

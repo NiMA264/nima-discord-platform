@@ -191,7 +191,19 @@
         updated_at TEXT NOT NULL,
         UNIQUE(guild_id, ask_context_id, feedback_type)
     );`,
-    `CREATE INDEX IF NOT EXISTS idx_feedback_reviews_scope ON knowledge_feedback_reviews (guild_id, feedback_type, status, updated_at);`
+    `CREATE INDEX IF NOT EXISTS idx_feedback_reviews_scope ON knowledge_feedback_reviews (guild_id, feedback_type, status, updated_at);`,
+    `CREATE TABLE IF NOT EXISTS domain_events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_uid TEXT NOT NULL UNIQUE,
+        workspace_id TEXT NOT NULL,
+        type TEXT NOT NULL,
+        entity_type TEXT NOT NULL,
+        entity_id TEXT NOT NULL,
+        metadata TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    );`,
+    `CREATE INDEX IF NOT EXISTS idx_domain_events_workspace_created ON domain_events (workspace_id, created_at DESC);`,
+    `CREATE INDEX IF NOT EXISTS idx_domain_events_type_created ON domain_events (type, created_at DESC);`
 ];
 
 module.exports = { schemaStatements };

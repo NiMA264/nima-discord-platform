@@ -11,6 +11,7 @@ const {
     removeProjectMember,
 } = require('../repositories/projectRepository');
 const { inspectSingleProject } = require('../reconciliation/projectReconciliation');
+const { recordDomainEvent } = require('../domain/events/domainEventService');
 
 function slugify(value) {
     return value
@@ -31,6 +32,7 @@ async function createProject(payload) {
 
     await createProjectEntity({
         projectUid,
+        workspaceId: payload.workspaceId,
         guildId: payload.guildId,
         threadId: 'pending',
         creatorId: payload.creatorId,
@@ -64,6 +66,17 @@ async function createProject(payload) {
         },
         createdAt: payload.createdAt
     });
+    const createdProject = await findProjectByUid(projectUid, payload.workspaceId);
+    recordDomainEvent({
+        workspaceId: createdProject?.workspace_id,
+        type: 'project.created',
+        entityType: 'project',
+        entityId: projectUid,
+        metadata: {
+            guildId: payload.guildId,
+            creatorId: payload.creatorId
+        }
+    });
 
     return { projectUid, slug };
 }
@@ -90,6 +103,16 @@ async function addProjectLog({ guildId, projectName, entry, userId }) {
             entry,
             userId,
             threadId: project.thread_id
+        }
+    });
+    recordDomainEvent({
+        workspaceId: project.workspace_id,
+        type: 'project.log_added',
+        entityType: 'project',
+        entityId: project.project_uid,
+        metadata: {
+            guildId,
+            userId
         }
     });
 

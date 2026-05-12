@@ -6,6 +6,7 @@ const {
 } = require('../repositories/taskRepository');
 const { createProjectLog, findProjectByUid } = require('../repositories/projectRepository');
 const { notifyDomainEvent } = require('./notificationService');
+const { recordDomainEvent } = require('../domain/events/domainEventService');
 
 async function createTask({ projectId, title, description, actorId, workspaceId }) {
     const project = await findProjectByUid(projectId, workspaceId);
@@ -26,6 +27,16 @@ async function createTask({ projectId, title, description, actorId, workspaceId 
         content: { taskId, title, description, actorId },
         workspaceId: project.workspace_id
     });
+    recordDomainEvent({
+        workspaceId: project.workspace_id,
+        type: 'task.created',
+        entityType: 'task',
+        entityId: taskId,
+        metadata: {
+            projectId,
+            actorId
+        }
+    });
 
     return findTaskByUid(taskId);
 }
@@ -42,7 +53,6 @@ async function assignTask({ taskId, userId, actorId }) {
         content: { taskId, userId, actorId },
         workspaceId: task.workspace_id
     });
-
     const updated = await findTaskByUid(taskId);
 
     await notifyDomainEvent('task.assigned', {
@@ -67,6 +77,16 @@ async function closeTask({ taskId, actorId }) {
         eventType: 'task.closed',
         content: { taskId, actorId },
         workspaceId: task.workspace_id
+    });
+    recordDomainEvent({
+        workspaceId: task.workspace_id,
+        type: 'task.completed',
+        entityType: 'task',
+        entityId: taskId,
+        metadata: {
+            projectId: task.project_uid,
+            actorId
+        }
     });
 
     const updated = await findTaskByUid(taskId);

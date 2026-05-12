@@ -7,6 +7,7 @@ const roleBindingRepository = require(path.resolve(__dirname, '../../../src/repo
 const activityService = require(path.resolve(__dirname, '../../../src/services/projectActivityFeedService'));
 const analyticsService = require(path.resolve(__dirname, '../../../src/services/analyticsService'));
 const aiWorkflowSuggestionService = require(path.resolve(__dirname, '../../../src/services/aiWorkflowSuggestionService'));
+const activityInsightsService = require(path.resolve(__dirname, '../../../src/services/activityInsightsService'));
 const { ProjectRole, isValidProjectRole } = require(path.resolve(__dirname, '../../../src/domain/projectRole'));
 const workspaceService = require(path.resolve(__dirname, '../../../src/domain/workspace/workspaceService'));
 const { resolveWorkspaceId } = require(path.resolve(__dirname, '../../../src/domain/workspace/workspaceContext'));
@@ -98,6 +99,33 @@ async function getWorkflowSuggestionsForGuild(guildId, options = {}) {
     });
 }
 
+async function getActivityInsightsForGuild(guildId, options = {}) {
+    if (!guildId) {
+        return {
+            workspaceId: '',
+            recentEvents: [],
+            topActiveProjects: [],
+            recentAssignments: [],
+            recentStatusChanges: [],
+            githubActivity: {
+                activeRepositories: [],
+                recentGithubEvents: [],
+                contributionCounts: {
+                    push: 0,
+                    pullRequestsOpened: 0,
+                    issuesOpened: 0
+                }
+            }
+        };
+    }
+
+    return activityInsightsService.getActivityInsights({
+        guildId,
+        userId: options.userId,
+        workspaceId: options.workspaceId
+    });
+}
+
 function listRoleBindingsForGuild(guildId) {
     if (!guildId) return [];
     return roleBindingRepository.listRoleBindingsByGuild(guildId);
@@ -161,6 +189,7 @@ module.exports = {
     getProjectDashboardView,
     getAnalyticsOverviewForGuild,
     getWorkflowSuggestionsForGuild,
+    getActivityInsightsForGuild,
     listRoleBindingsForGuild,
     updateRoleBinding,
     deleteRoleBinding,

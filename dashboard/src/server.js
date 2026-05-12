@@ -16,6 +16,7 @@ const {
     getProjectDashboardView,
     getAnalyticsOverviewForGuild,
     getWorkflowSuggestionsForGuild,
+    getActivityInsightsForGuild,
     listRoleBindingsForGuild,
     updateRoleBinding,
     updateProjectMemberRole,
@@ -257,6 +258,20 @@ function createDashboardServer() {
         }
     });
 
+    app.get('/api/analytics/activity', requireAuth, async (req, res) => {
+        try {
+            const guildId = String(req.query.guildId || '');
+            const workspaceId = String(req.query.workspaceId || '');
+            const insights = await getActivityInsightsForGuild(guildId, {
+                userId: req.session.user?.id,
+                workspaceId
+            });
+            res.json({ insights });
+        } catch (err) {
+            res.status(500).json({ error: `Activity insights failed: ${err.message}` });
+        }
+    });
+
     app.get('/api/guilds/:guildId/role-bindings', requireAuth, async (req, res) => {
         try {
             const guildId = String(req.params.guildId || '');
@@ -338,11 +353,12 @@ function createDashboardServer() {
         const workspaceQuery = workspaceId ? `?workspaceId=${encodeURIComponent(workspaceId)}` : '';
 
         try {
-            const [{ projects }, { roleBindings }, { overview }, { suggestions }] = await Promise.all([
+            const [{ projects }, { roleBindings }, { overview }, { suggestions }, { insights }] = await Promise.all([
                 apiClient.getProjects(req.session.accessToken, guildId, workspaceId),
                 apiClient.getRoleBindings(req.session.accessToken, guildId),
                 apiClient.getAnalyticsOverview(req.session.accessToken, guildId, workspaceId),
-                apiClient.getWorkflowSuggestions(req.session.accessToken, guildId, workspaceId)
+                apiClient.getWorkflowSuggestions(req.session.accessToken, guildId, workspaceId),
+                apiClient.getActivityInsights(req.session.accessToken, guildId, workspaceId)
             ]);
 
             const rows = projects.length
@@ -360,6 +376,16 @@ function createDashboardServer() {
             const suggestionRows = suggestions?.suggestions?.length
                 ? suggestions.suggestions.map(item => `<div class="item"><strong>${item.type}</strong> ${suggestionSeverityBadge(item.severity)}<div>${item.message}</div><div class="meta">entity=${item.entityId || '-'} | workspace=${suggestions.workspaceId || '-'}</div></div>`).join('')
                 : '<div>No workflow suggestions.</div>';
+            const githubActivity = insights?.githubActivity || {};
+            const githubRepos = githubActivity.activeRepositories || [];
+            const githubEvents = githubActivity.recentGithubEvents || [];
+            const githubCounts = githubActivity.contributionCounts || { push: 0, pullRequestsOpened: 0, issuesOpened: 0 };
+            const githubRepoRows = githubRepos.length
+                ? githubRepos.map(item => `<div class="item"><strong>${item.repositoryFullName}</strong><div class="meta">events=${item.eventCount}</div></div>`).join('')
+                : '<div>No active repositories yet.</div>';
+            const githubEventRows = githubEvents.slice(0, 5).length
+                ? githubEvents.slice(0, 5).map(item => `<div class="item"><strong>${item.type}</strong><div class="meta">${item.repositoryFullName} | actor=${item.actor || '-'} | ${item.createdAt}</div></div>`).join('')
+                : '<div>No recent GitHub events.</div>';
 
             const flash = flashFromQuery(req.query);
             const isAdmin = isGuildAdmin(getGuildMembership(req, guildId));
@@ -393,6 +419,16 @@ function createDashboardServer() {
                 '<div class="card">',
                 '<h2>Workflow Suggestions</h2>',
                 suggestionRows,
+                '</div>',
+                '<div class="card">',
+                '<h2>GitHub Activity</h2>',
+                `<div class="item"><strong>push</strong> ${githubCounts.push || 0}</div>`,
+                `<div class="item"><strong>pullRequestsOpened</strong> ${githubCounts.pullRequestsOpened || 0}</div>`,
+                `<div class="item"><strong>issuesOpened</strong> ${githubCounts.issuesOpened || 0}</div>`,
+                '<h3>Active Repositories</h3>',
+                githubRepoRows,
+                '<h3>Recent GitHub Events</h3>',
+                githubEventRows,
                 '</div>',
                 '<div class="card">',
                 '<h2>Guild Role Bindings</h2>',

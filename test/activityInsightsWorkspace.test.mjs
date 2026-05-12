@@ -53,6 +53,41 @@ describe('activity insights workspace scope', () => {
         });
         domainEventService.recordDomainEvent({
             workspaceId: wsB,
+            type: 'github.push',
+            entityType: 'repository',
+            entityId: 'org/repo-b',
+            metadata: {
+                repositoryFullName: 'org/repo-b',
+                sender: 'dev-b',
+                url: 'https://github.com/org/repo-b/compare/main'
+            }
+        });
+        domainEventService.recordDomainEvent({
+            workspaceId: wsB,
+            type: 'github.pull_request.opened',
+            entityType: 'repository',
+            entityId: 'org/repo-b',
+            metadata: {
+                repositoryFullName: 'org/repo-b',
+                sender: 'dev-b',
+                pullRequestNumber: 12,
+                url: 'https://github.com/org/repo-b/pull/12'
+            }
+        });
+        domainEventService.recordDomainEvent({
+            workspaceId: wsA,
+            type: 'github.issue.opened',
+            entityType: 'repository',
+            entityId: 'org/repo-a',
+            metadata: {
+                repositoryFullName: 'org/repo-a',
+                sender: 'dev-a',
+                issueNumber: 21,
+                url: 'https://github.com/org/repo-a/issues/21'
+            }
+        });
+        domainEventService.recordDomainEvent({
+            workspaceId: wsB,
             type: 'task.status_changed',
             entityType: 'task',
             entityId: `task-b3-${Date.now()}`,
@@ -77,5 +112,9 @@ describe('activity insights workspace scope', () => {
         expect(insights.recentAssignments.some(item => item.assigneeUserId === 'discord-a')).toBe(false);
         expect(insights.recentStatusChanges.length).toBeGreaterThanOrEqual(2);
         expect(insights.recentStatusChanges.every(item => item.projectId === 'project-b')).toBe(true);
+        expect(insights.githubActivity.activeRepositories[0]?.repositoryFullName).toBe('org/repo-b');
+        expect(insights.githubActivity.recentGithubEvents.some(item => item.repositoryFullName === 'org/repo-a')).toBe(false);
+        expect(insights.githubActivity.contributionCounts.push).toBeGreaterThanOrEqual(1);
+        expect(insights.githubActivity.contributionCounts.pullRequestsOpened).toBeGreaterThanOrEqual(1);
     });
 });

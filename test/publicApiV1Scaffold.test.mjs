@@ -105,6 +105,10 @@ describe('public api v1 scaffold', () => {
         expect(response.body.data).toHaveProperty('topActiveProjects');
         expect(response.body.data).toHaveProperty('recentAssignments');
         expect(response.body.data).toHaveProperty('recentStatusChanges');
+        expect(response.body.data).toHaveProperty('githubActivity');
+        expect(response.body.data.githubActivity).toHaveProperty('activeRepositories');
+        expect(response.body.data.githubActivity).toHaveProperty('recentGithubEvents');
+        expect(response.body.data.githubActivity).toHaveProperty('contributionCounts');
     });
 
     it('workflow suggestions route exposes stable v1 shape', async () => {

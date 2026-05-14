@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { eventually } from './helpers/queueDrain.mjs';
 
 process.env.PROJECT_REPO_ADAPTER = 'sqlite';
 
@@ -72,10 +73,12 @@ describe('digestWorker', () => {
         });
 
         expect(emitted).toBe(1);
-        expect(emit).toHaveBeenCalledWith('project.digest.daily', expect.objectContaining({
-            projectId: projectUid,
-            period: 'daily'
-        }));
+        await eventually(() => {
+            expect(emit).toHaveBeenCalledWith('project.digest.daily', expect.objectContaining({
+                projectId: projectUid,
+                period: 'daily'
+            }));
+        }, { timeoutMs: 500, intervalMs: 25 });
     }, 15000);
 
     it('emits weekly digest', async () => {
@@ -95,9 +98,11 @@ describe('digestWorker', () => {
         });
 
         expect(emitted).toBe(1);
-        expect(emit).toHaveBeenCalledWith('project.digest.weekly', expect.objectContaining({
-            projectId: projectUid,
-            period: 'weekly'
-        }));
+        await eventually(() => {
+            expect(emit).toHaveBeenCalledWith('project.digest.weekly', expect.objectContaining({
+                projectId: projectUid,
+                period: 'weekly'
+            }));
+        }, { timeoutMs: 500, intervalMs: 25 });
     }, 15000);
 });

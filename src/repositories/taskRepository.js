@@ -1,7 +1,8 @@
-const crypto = require('crypto');
 const { getPrisma } = require('../lib/prisma');
 const sqliteAdapter = require('./taskRepository.sqlite');
 const { resolveWorkspaceId } = require('../domain/workspace/workspaceContext');
+const { nowIso } = require('../lib/clock');
+const { newUuid } = require('../lib/uuidProvider');
 
 function useFallback() {
     return process.env.PROJECT_REPO_ADAPTER === 'sqlite';
@@ -35,12 +36,12 @@ async function createTask(data) {
     const prisma = getPrisma();
     return prisma.$executeRaw`
         INSERT INTO tasks (task_uid, workspace_id, project_uid, title, description, status, assignee_user_id, assigned_to, created_by, created_at)
-        VALUES (${data.taskUid}, ${workspaceId}, ${data.projectUid}, ${data.title}, ${data.description || null}, ${normalizeTaskStatus(data.status || 'open')}, ${data.assigneeUserId || data.assignedTo || null}, ${data.assignedTo || null}, ${data.createdBy}, ${data.createdAt || new Date().toISOString()})
+        VALUES (${data.taskUid}, ${workspaceId}, ${data.projectUid}, ${data.title}, ${data.description || null}, ${normalizeTaskStatus(data.status || 'open')}, ${data.assigneeUserId || data.assignedTo || null}, ${data.assignedTo || null}, ${data.createdBy}, ${data.createdAt || nowIso()})
     `;
 }
 
 async function createTaskEntity({ projectUid, title, description, createdBy, workspaceId }) {
-    const taskUid = crypto.randomUUID();
+    const taskUid = newUuid();
     await createTask({ taskUid, projectUid, title, description, createdBy, status: 'open', workspaceId });
     return taskUid;
 }
@@ -87,7 +88,7 @@ async function assignTask(taskUid, assignedTo) {
 async function updateTaskStatus(taskUid, status, workspaceIdInput) {
     if (useFallback()) return sqliteAdapter.updateTaskStatus(taskUid, status, workspaceIdInput);
     const normalized = normalizeTaskStatus(status);
-    const closedAt = normalized === 'done' ? new Date().toISOString() : null;
+    const closedAt = normalized === 'done' ? nowIso() : null;
     const prisma = getPrisma();
     if (!workspaceIdInput) {
         return prisma.$executeRaw`

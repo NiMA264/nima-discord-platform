@@ -28,6 +28,17 @@ function validateEnvironment(env = process.env) {
     }
 
     const warnings = [];
+    const nodeEnv = String(env.NODE_ENV || '').trim().toLowerCase();
+    const isDevelopment = nodeEnv === 'development';
+    const publicApiEnabled = String(env.PUBLIC_API_ENABLED || 'true').trim().toLowerCase() !== 'false';
+    const publicApiToken = String(env.PUBLIC_API_TOKEN || '').trim();
+    if (publicApiEnabled && !isDevelopment && !publicApiToken) {
+        const warning = 'PUBLIC_API_TOKEN missing while PUBLIC_API_ENABLED=true outside development';
+        warnings.push(warning);
+        envLog.error(warning);
+        return { ok: false, missing: ['PUBLIC_API_TOKEN'], warnings };
+    }
+
     if (!env.OPENAI_API_KEY || String(env.OPENAI_API_KEY).trim() === '') {
         const warning = 'OPENAI_API_KEY missing - AI commands will use deterministic fallback';
         warnings.push(warning);

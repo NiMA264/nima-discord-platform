@@ -1,6 +1,7 @@
-const crypto = require('crypto');
 const { getPrisma } = require('../lib/prisma');
 const sqliteAdapter = require('./sprintRepository.sqlite');
+const { nowIso } = require('../lib/clock');
+const { newUuid } = require('../lib/uuidProvider');
 
 function useFallback() {
     return process.env.PROJECT_REPO_ADAPTER === 'sqlite';
@@ -11,7 +12,7 @@ function rowOrNull(rows) {
 }
 
 async function createSprintEntity({ projectUid, title, startedBy, startedAt, status }) {
-    const sprintUid = crypto.randomUUID();
+    const sprintUid = newUuid();
     if (useFallback()) {
         await sqliteAdapter.createSprint({ sprintUid, projectUid, title, startedBy, startedAt, status });
         return sprintUid;
@@ -20,7 +21,7 @@ async function createSprintEntity({ projectUid, title, startedBy, startedAt, sta
     const prisma = getPrisma();
     await prisma.$executeRaw`
         INSERT INTO sprints (sprint_uid, project_uid, title, status, started_by, started_at)
-        VALUES (${sprintUid}, ${projectUid}, ${title}, ${status || 'ACTIVE'}, ${startedBy}, ${startedAt || new Date().toISOString()})
+        VALUES (${sprintUid}, ${projectUid}, ${title}, ${status || 'ACTIVE'}, ${startedBy}, ${startedAt || nowIso()})
     `;
     return sprintUid;
 }
@@ -42,7 +43,7 @@ async function closeSprint(sprintUid, closedBy) {
     if (useFallback()) return sqliteAdapter.closeSprint(sprintUid, closedBy);
     const prisma = getPrisma();
     return prisma.$executeRaw`
-        UPDATE sprints SET status = 'CLOSED', closed_by = ${closedBy}, closed_at = ${new Date().toISOString()}
+        UPDATE sprints SET status = 'CLOSED', closed_by = ${closedBy}, closed_at = ${nowIso()}
         WHERE sprint_uid = ${sprintUid}
     `;
 }

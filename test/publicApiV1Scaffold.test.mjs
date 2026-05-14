@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+﻿import { describe, it, expect } from 'vitest';
 import authModule from '../src/api/v1/middleware/auth.js';
 import projectsRoute from '../src/api/v1/routes/projects.js';
 import tasksRoute from '../src/api/v1/routes/tasks.js';
@@ -11,10 +11,10 @@ import workflowSuggestionsRoute from '../src/api/v1/routes/workflowSuggestions.j
 const { authenticateApiRequest } = authModule;
 
 describe('public api v1 scaffold', () => {
-    it('auth middleware allows requests when token is not configured', () => {
+    it('auth middleware rejects requests when token is not configured', () => {
         const result = authenticateApiRequest({ headers: {} }, {});
-        expect(result.ok).toBe(true);
-        expect(result.context.authMode).toBe('disabled');
+        expect(result.ok).toBe(false);
+        expect(result.statusCode).toBe(401);
     });
 
     it('auth middleware rejects invalid bearer token when configured', () => {
@@ -27,7 +27,7 @@ describe('public api v1 scaffold', () => {
     });
 
     it('projects/tasks/activity handlers expose stable placeholder response shapes', () => {
-        const context = { authMode: 'disabled' };
+        const context = { authMode: 'token' };
         const responses = [
             projectsRoute.getProjects({}, {}, context),
             projectsRoute.postProjects({}, { name: 'demo' }, context),
@@ -42,12 +42,12 @@ describe('public api v1 scaffold', () => {
             expect(response).toHaveProperty('body.ok', true);
             expect(response.body).toHaveProperty('meta.version', 'v1');
             expect(response.body).toHaveProperty('meta.placeholder', true);
-            expect(response.body).toHaveProperty('meta.authMode', 'disabled');
+            expect(response.body).toHaveProperty('meta.authMode', 'token');
         }
     });
 
     it('workspaces routes expose list/create/detail response shapes', () => {
-        const context = { authMode: 'disabled' };
+        const context = { authMode: 'token' };
         const listResponse = workspacesRoute.getWorkspaces({}, {}, context);
         const createResponse = workspacesRoute.postWorkspaces({}, { name: `API WS ${Date.now()}` }, context);
         const detailResponse = workspacesRoute.getWorkspaceById({ params: { id: createResponse.body.data.workspaceId } }, {}, context);
@@ -63,7 +63,7 @@ describe('public api v1 scaffold', () => {
         const previousAdapter = process.env.PROJECT_REPO_ADAPTER;
         try {
             process.env.PROJECT_REPO_ADAPTER = 'sqlite';
-            const context = { authMode: 'disabled' };
+            const context = { authMode: 'token' };
             const response = await analyticsRoute.getAnalyticsOverview({
                 query: {
                     guildId: `guild-${Date.now()}`,
@@ -88,7 +88,7 @@ describe('public api v1 scaffold', () => {
     });
 
     it('activity insights route exposes stable v1 shape', async () => {
-        const context = { authMode: 'disabled' };
+        const context = { authMode: 'token' };
         const response = await activityInsightsRoute.getActivityInsights({
             query: {
                 guildId: `guild-${Date.now()}`,
@@ -115,7 +115,7 @@ describe('public api v1 scaffold', () => {
         const previousAdapter = process.env.PROJECT_REPO_ADAPTER;
         try {
             process.env.PROJECT_REPO_ADAPTER = 'sqlite';
-            const context = { authMode: 'disabled' };
+            const context = { authMode: 'token' };
             const response = await workflowSuggestionsRoute.getWorkflowSuggestions({
                 query: {
                     guildId: `guild-${Date.now()}`,

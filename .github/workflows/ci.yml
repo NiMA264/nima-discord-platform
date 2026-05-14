@@ -7,8 +7,49 @@ on:
     branches: ["master"]
 
 jobs:
+  transition-governance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Transition Governance Lint
+        run: npm run transition:lint
+
+  architecture-governance:
+    runs-on: ubuntu-latest
+    needs: transition-governance
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Architecture Constraint Lint
+        run: npm run architecture:lint
+
+      - name: Event Envelope Fixture Lint
+        run: npm run event-envelope:lint
+
   test:
     runs-on: ubuntu-latest
+    needs: architecture-governance
     steps:
       - name: Checkout
         uses: actions/checkout@v4

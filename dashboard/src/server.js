@@ -133,7 +133,15 @@ function createDashboardServer() {
     const app = express();
     const apiClient = createApiClient({ baseUrl: `http://127.0.0.1:${env.port}` });
 
-    app.use(createSessionMiddleware(env.sessionSecret));
+    if (env.trustProxy) {
+        app.set('trust proxy', 1);
+    }
+
+    app.use(createSessionMiddleware({
+        secret: env.sessionSecret,
+        secure: env.sessionCookieSecure,
+        sameSite: env.sessionCookieSameSite
+    }));
     app.use(express.urlencoded({ extended: false }));
 
     app.get('/', (req, res) => {

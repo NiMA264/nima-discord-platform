@@ -1,0 +1,17 @@
+{
+  "event_id": "evt-github-issue-opened-001",
+  "idempotency_key": "gh-delivery-003",
+  "type": "github.issue.opened",
+  "version": 1,
+  "occurred_at": "2026-05-13T09:20:00.000Z",
+  "workspace_id": "default-workspace",
+  "source": "github",
+  "payload": {
+    "deliveryId": "gh-delivery-003",
+    "repositoryFullName": "org/repo",
+    "sender": "dev-user",
+    "action": "opened",
+    "issueNumber": 7,
+    "url": "https://github.com/org/repo/issues/7"
+  }
+}

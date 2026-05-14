@@ -2,6 +2,7 @@ const http = require('http');
 const { URL } = require('url');
 const { info, warn } = require('../../utils/logger');
 const { authenticateApiRequest } = require('./middleware/auth');
+const { createRateLimiter } = require('./middleware/rateLimit');
 const projectsRoute = require('./routes/projects');
 const tasksRoute = require('./routes/tasks');
 const activityRoute = require('./routes/activity');
@@ -47,6 +48,13 @@ function startPublicApiServer() {
     const enabled = String(process.env.PUBLIC_API_ENABLED || 'true').toLowerCase() !== 'false';
     if (!enabled) return null;
 
+    const limiter = createRateLimiter({
+        windowMs: Number(process.env.PUBLIC_API_RATE_LIMIT_WINDOW_MS || 60000),
+        globalLimit: Number(process.env.PUBLIC_API_RATE_LIMIT_GLOBAL || 300),
+        ipLimit: Number(process.env.PUBLIC_API_RATE_LIMIT_IP || 120),
+        tokenLimit: Number(process.env.PUBLIC_API_RATE_LIMIT_TOKEN || 60)
+    });
+
     const port = Number(process.env.PUBLIC_API_PORT || 8790);
     const server = http.createServer(async (req, res) => {
         const requestUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
@@ -56,9 +64,35 @@ function startPublicApiServer() {
             return;
         }
 
+        const preAuthRate = limiter.checkPreAuth(req);
+        if (!preAuthRate.ok) {
+            res.setHeader('retry-after', String(preAuthRate.retryAfterSeconds));
+            sendJson(res, 429, {
+                ok: false,
+                error: {
+                    code: 'TOO_MANY_REQUESTS',
+                    message: `Rate limit exceeded (${preAuthRate.scope})`
+                }
+            });
+            return;
+        }
+
         const auth = authenticateApiRequest(req);
         if (!auth.ok) {
             sendJson(res, auth.statusCode, auth.body);
+            return;
+        }
+
+        const tokenRate = limiter.checkTokenScope(auth.context?.tokenFingerprint);
+        if (!tokenRate.ok) {
+            res.setHeader('retry-after', String(tokenRate.retryAfterSeconds));
+            sendJson(res, 429, {
+                ok: false,
+                error: {
+                    code: 'TOO_MANY_REQUESTS',
+                    message: `Rate limit exceeded (${tokenRate.scope})`
+                }
+            });
             return;
         }
 

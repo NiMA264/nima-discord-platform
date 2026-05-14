@@ -32,6 +32,15 @@ copy .env.example .env
 - `DISCORD_CLIENT_SECRET`
 - `DISCORD_REDIRECT_URI` (must match Discord OAuth app config)
 - `DASHBOARD_SESSION_SECRET`
+- Optional hardening:
+  - `DASHBOARD_TRUST_PROXY=true` (required in production behind reverse proxy)
+  - `DASHBOARD_SESSION_COOKIE_SECURE=true` (defaults to true in production)
+  - `DASHBOARD_SESSION_COOKIE_SAMESITE=lax|strict|none` (default `lax`)
+
+## Security Notes
+- In `NODE_ENV=production`, secure session cookies require `DASHBOARD_TRUST_PROXY=true`.
+- In `NODE_ENV=production`, `DISCORD_REDIRECT_URI` must use HTTPS.
+- Invalid session/proxy cookie combinations fail fast at startup.
 
 ## Run
 ```bash

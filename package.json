@@ -9,7 +9,10 @@
     "check": "node --check src/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "replay:github-activity": "node scripts/replayProjection.js --projection githubActivity --workspaceId default-workspace"
+    "replay:github-activity": "node scripts/replayProjection.js --projection githubActivity --workspaceId default-workspace",
+    "transition:lint": "node scripts/transition-lint.js",
+    "architecture:lint": "node scripts/architecture-lint.js",
+    "event-envelope:lint": "node scripts/event-envelope-lint.js"
   },
   "keywords": [],
   "author": "",

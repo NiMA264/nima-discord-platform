@@ -1,0 +1,28 @@
+﻿External Key,Jira Key,Issue Type,Summary
+NIMA-INIT-001,,Initiative,Platform Transition Program
+NIMA-EPIC-SEC-001,,Epic,Security Baseline Hardening
+NIMA-EPIC-QA-001,,Epic,QA/CI Determinism
+NIMA-EPIC-ADR-001,,Epic,ADR & Governance
+NIMA-EPIC-RUN-001,,Epic,Runtime Split
+NIMA-STORY-SEC-001,,Story,API Auth Enforcement
+NIMA-STORY-SEC-002,,Story,Session Hardening
+NIMA-STORY-QA-001,,Story,Test DB Isolation
+NIMA-STORY-QA-002,,Story,Clock/UUID Abstractions
+NIMA-STORY-QA-003,,Story,Release Gates
+NIMA-STORY-ADR-001,,Story,ADR-001 Persistence
+NIMA-STORY-ADR-002,,Story,ADR-002 Runtime Split
+NIMA-STORY-RUN-001,,Story,Separate Entrypoints
+NIMA-STORY-RUN-002,,Story,Health/Readiness
+NIMA-STORY-ADR-003,,Story,Constraint Test Baseline
+NIMA-TASK-SEC-001,,Task,Implement fail-fast env check
+NIMA-TASK-SEC-002,,Task,Enforce bearer auth in middleware
+NIMA-TASK-SEC-003,,Task,Set secure cookie policy
+NIMA-TASK-QA-001,,Task,Implement per-suite DB path
+NIMA-TASK-QA-002,,Task,Add test clock provider
+NIMA-TASK-QA-003,,Task,Add UUID provider abstraction
+NIMA-TASK-QA-004,,Task,Create CI gate workflow
+NIMA-TASK-ADR-001,,Task,Draft ADR-001
+NIMA-TASK-ADR-002,,Task,Draft ADR-002
+NIMA-TASK-RUN-001,,Task,Split process entrypoints
+NIMA-TASK-RUN-002,,Task,Add health/readiness endpoints
+NIMA-TASK-ADR-003,,Task,Build architecture constraint baseline

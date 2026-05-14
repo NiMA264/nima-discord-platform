@@ -1,4 +1,5 @@
 const { getDatabase } = require('./database');
+let phase1Ensured = false;
 const statements = [
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_projects_project_uid ON projects (project_uid);`,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_projects_slug ON projects (slug);`,
@@ -98,6 +99,15 @@ const statements = [
         processed_at TEXT
     );`,
     `CREATE INDEX IF NOT EXISTS idx_github_webhook_events_status ON github_webhook_events (status, created_at);`,
+    `CREATE TABLE IF NOT EXISTS github_webhook_delivery_dedupe (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        delivery_id TEXT NOT NULL UNIQUE,
+        event_name TEXT,
+        repository_full_name TEXT,
+        workspace_id TEXT,
+        first_seen_at TEXT NOT NULL
+    );`,
+    `CREATE INDEX IF NOT EXISTS idx_github_webhook_delivery_first_seen ON github_webhook_delivery_dedupe (first_seen_at);`,
     `CREATE TABLE IF NOT EXISTS github_repository_mappings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         repository_full_name TEXT NOT NULL UNIQUE,
@@ -123,6 +133,7 @@ function ensureColumn(db, table, column, definition) {
 }
 
 function ensurePhase1Persistence() {
+    if (phase1Ensured) return;
     const db = getDatabase();
 
     ensureColumn(db, 'projects', 'project_uid', 'project_uid TEXT');
@@ -141,6 +152,7 @@ function ensurePhase1Persistence() {
     ensureColumn(db, 'guild_settings', 'knowledge_channel_id', 'knowledge_channel_id TEXT');
     ensureColumn(db, 'guild_settings', 'setup_category_id', 'setup_category_id TEXT');
     ensureColumn(db, 'workspace_settings', 'slack_webhook_url', 'slack_webhook_url TEXT');
+    ensureColumn(db, 'domain_events', 'idempotency_key', 'idempotency_key TEXT');
 
     for (const statement of statements) {
         db.prepare(statement).run();
@@ -194,6 +206,16 @@ function ensurePhase1Persistence() {
            OR trim(status) = ''
            OR lower(trim(status)) IN ('todo', 'open', 'in_progress', 'doing', 'done', 'completed', 'closed')
     `).run();
+    db.prepare(`
+        UPDATE domain_events
+        SET idempotency_key = event_uid
+        WHERE idempotency_key IS NULL OR trim(idempotency_key) = ''
+    `).run();
+    db.prepare(`
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_domain_events_workspace_idempotency
+        ON domain_events (workspace_id, idempotency_key)
+    `).run();
+    phase1Ensured = true;
 }
 
 module.exports = {

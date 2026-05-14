@@ -140,6 +140,15 @@
         processed_at TEXT
     );`,
     `CREATE INDEX IF NOT EXISTS idx_github_webhook_events_status ON github_webhook_events (status, created_at);`,
+    `CREATE TABLE IF NOT EXISTS github_webhook_delivery_dedupe (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        delivery_id TEXT NOT NULL UNIQUE,
+        event_name TEXT,
+        repository_full_name TEXT,
+        workspace_id TEXT,
+        first_seen_at TEXT NOT NULL
+    );`,
+    `CREATE INDEX IF NOT EXISTS idx_github_webhook_delivery_first_seen ON github_webhook_delivery_dedupe (first_seen_at);`,
     `CREATE TABLE IF NOT EXISTS ticket_transcripts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         ticket_id INTEGER NOT NULL,
@@ -223,6 +232,7 @@
     `CREATE TABLE IF NOT EXISTS domain_events (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         event_uid TEXT NOT NULL UNIQUE,
+        idempotency_key TEXT,
         workspace_id TEXT NOT NULL,
         type TEXT NOT NULL,
         entity_type TEXT NOT NULL,

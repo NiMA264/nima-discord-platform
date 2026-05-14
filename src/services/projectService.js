@@ -1,4 +1,3 @@
-const crypto = require('crypto');
 const { ProjectRole } = require('../domain/projectRole');
 const {
     createProjectEntity,
@@ -12,6 +11,7 @@ const {
 } = require('../repositories/projectRepository');
 const { inspectSingleProject } = require('../reconciliation/projectReconciliation');
 const { recordDomainEvent } = require('../domain/events/domainEventService');
+const { newUuid } = require('../lib/uuidProvider');
 
 function slugify(value) {
     return value
@@ -23,7 +23,7 @@ function slugify(value) {
 }
 
 function generateProjectUid() {
-    return crypto.randomUUID();
+    return newUuid();
 }
 
 async function createProject(payload) {

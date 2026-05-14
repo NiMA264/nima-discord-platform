@@ -1,5 +1,3 @@
-const session = require('express-session');
-
 function buildSessionOptions({ secret, secure, sameSite }) {
     return {
         name: 'nima_dashboard_session',
@@ -16,6 +14,7 @@ function buildSessionOptions({ secret, secure, sameSite }) {
 }
 
 function createSessionMiddleware({ secret, secure, sameSite }) {
+    const session = require('express-session');
     const options = buildSessionOptions({ secret, secure, sameSite });
     return session({
         ...options
